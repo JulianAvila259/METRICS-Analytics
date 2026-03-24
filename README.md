@@ -1,6 +1,3 @@
-# METRICS-Analytics
-Plataforma de analítica deportiva con Visión Artificial para fútbol amateur.
-
 # METRICS Analytics ⚽📊
 > **Mide tu juego. Supera tus límites.**
 
