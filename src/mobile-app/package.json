@@ -2,7 +2,7 @@
   "name": "mobile-app",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "App.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -10,9 +10,11 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@expo/metro-runtime": "~55.0.6",
     "expo": "^55.0.8",
-    "react-dom": "^19.2.4",
-    "react-native": "^0.84.1",
-    "react-native-web": "^0.21.2"
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "react-native": "0.83.2",
+    "react-native-web": "^0.21.0"
   }
 }
