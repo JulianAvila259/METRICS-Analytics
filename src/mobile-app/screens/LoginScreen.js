@@ -6,7 +6,7 @@ export default function LoginScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
         <Text style={styles.brand}>METRICS</Text>
-        <Text style={styles.tagline}>Sports AI</Text>
+        <Text style={styles.tagline}>Mide tu juego. Supera tus límites.</Text>
 
         <View style={styles.headerTextContainer}>
           <Text style={styles.title}>Tu rendimiento profesional, hoy.</Text>
@@ -33,7 +33,7 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#050A0E', // Fondo oscuro profundo (espacial)
+    backgroundColor: '#050A0E', 
   },
   content: {
     flex: 1,
@@ -42,8 +42,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   brand: {
-    color: '#4FD1C5', // Cian Eléctrico
-    fontSize: 48,
+    color: '#4FD1C5', 
     fontWeight: 'bold',
     letterSpacing: 2,
   },
