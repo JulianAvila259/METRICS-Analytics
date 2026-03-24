@@ -24,6 +24,54 @@ El repositorio está organizado siguiendo estándares de ingeniería para separa
 ## ⚖️ Licencia
 Este proyecto está bajo la Licencia MIT.
 ---
+# 🚀 Guía de Flujo de Trabajo con Ramas Protegidas
+
+Para mantener la estabilidad de nuestro código, la rama principal (**main/master**) está protegida. Sigue estos tres pasos para integrar tus cambios correctamente:
+
+---
+
+### 1. Sincronizar el Proyecto
+Antes de empezar, asegúrate de tener la versión más reciente del código para evitar conflictos innecesarios.
+
+* **Cámbiate a la rama principal:**
+    ```bash
+    git checkout main
+    ```
+* **Actualiza tu repositorio local:**
+    ```bash
+    git pull origin main
+    ```
+
+---
+
+### 2. Crear y Trabajar en una Rama Nueva
+Nunca trabajes directamente sobre una rama protegida. Crea una rama independiente para tus tareas.
+
+* **Crea y salta a la nueva rama:**
+    ```bash
+    git checkout -b nombre-de-tu-rama
+    ```
+* **Realiza tus cambios y guarda el progreso:**
+    ```bash
+    git add .
+    git commit -m "Descripción breve de lo que hiciste usando los conventional commits"
+    ```
+
+---
+
+### 3. Subir Cambios y Solicitar Revisión (Pull Request)
+Una vez terminado el trabajo, sube tu rama al servidor para que el equipo pueda revisarla.
+
+* **Sube tu rama a GitHub:**
+    ```bash
+    git push origin nombre-de-tu-rama
+    ```
+* **Finaliza en la Web:** Ve a la página del repositorio en GitHub. Verás un banner amarillo que dice **"Compare & pull request"**. Haz clic en él, describe tus cambios y solicita la revisión para que tus compañeros puedan aprobar e integrar el código.
+
+---
+
+> **Nota:** Recuerda que al estar la rama protegida, no podrás hacer `merge` tú mismo hasta que se cumplan los requisitos (aprobaciones o tests pasados).
+---
 ## 🤝 Guía de Contribución
 
 Para mantener un historial de cambios limpio y profesional, utilizamos **Conventional Commits**. Por favor, inicia tus mensajes de commit con una de estas etiquetas:
@@ -36,18 +84,4 @@ Para mantener un historial de cambios limpio y profesional, utilizamos **Convent
 - `chore:` Tareas de mantenimiento (ej: `chore: actualizar .gitignore`).
 
 **Ejemplo:** `git commit -m "feat: implementar matriz de homografía"`
-
 ---
-## 🛠️ Guía de Colaboración (Git Flow)
-
-Para mantener la integridad de **METRIX**, seguimos un flujo de trabajo basado en ramas (branches). **Nadie debe trabajar ni subir cambios directamente a la rama `main`.**
-
-### 1. Preparación
-Antes de empezar cualquier tarea, asegúrate de tener la última versión del proyecto:
-* `git checkout main`
-* `git pull origin main`
-
-### 2. Crear una rama nueva
-Crea una rama descriptiva para tu tarea. Usa prefijos como `feat-` para funciones nuevas o `fix-` para corregir errores:
-```bash
-git checkout -b nombre-de-tu-rama
