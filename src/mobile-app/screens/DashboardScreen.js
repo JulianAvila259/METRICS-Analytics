@@ -17,7 +17,7 @@ export default function DashboardScreen({ navigation }) {
     if (tab === 'Inicio') {
     } else if (tab === 'Partidos') {
     } else if (tab === 'Perfil') {
-
+        navigation.navigate('Perfil');
     }
   };
 

@@ -3,7 +3,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import DashboardScreen from './screens/DashboardScreen';
 import LoginScreen from './screens/LoginScreen';
-
+import PerfilScreen from './screens/PerfilScreen';
 
 const Stack = createStackNavigator();
 
@@ -23,6 +23,10 @@ export default function App() {
         <Stack.Screen 
           name="Dashboard" 
           component={DashboardScreen}
+        />
+        <Stack.Screen 
+          name="Perfil" 
+          component={PerfilScreen} 
         />
       </Stack.Navigator>
     </NavigationContainer>
