@@ -22,19 +22,11 @@ export default function DashboardScreen({ navigation }) {
   };
 
   const handleLogout = () => {
-    Alert.alert(
-      "Cerrar Sesión",
-      "¿Estás seguro de que deseas cerrar sesión?",
-      [
-        { text: "Cancelar", onPress: () => {} },
-        { 
-          text: "Cerrar Sesión", 
-          onPress: () => navigation.navigate('Login'),
-          style: 'destructive'
-        }
-      ]
-    );
-  };
+  navigation.reset({
+    index: 0,
+    routes: [{ name: 'Login' }],
+  });
+};
 
   return (
     <View style={styles.container}>
