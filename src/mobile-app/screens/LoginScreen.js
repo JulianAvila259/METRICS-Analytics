@@ -1,88 +1,107 @@
-import React from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, SafeAreaView } from 'react-native';
+import React, { useState } from 'react';
+import { 
+  StyleSheet, 
+  View, 
+  Text, 
+  TextInput, 
+  TouchableOpacity, 
+  ActivityIndicator, 
+  Alert 
+} from 'react-native';
 
-export default function LoginScreen() {
+export default function LoginScreen({ navigation }) {
+  
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  
+  const handleAuthSimulado = (metodo) => {
+    
+    if (metodo === 'Email' && (email === '' || password === '')) {
+      Alert.alert("Campos vacíos", "Por favor ingresa tu correo y contraseña.");
+      return;
+    }
+
+    setIsLoading(true);
+
+    
+   setTimeout(() => {
+    setIsLoading(false);
+    
+    // Navegar directamente al Dashboard sin Alert
+    navigation.navigate('Dashboard');
+  }, 1500);
+  }
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
-        <Text style={styles.brand}>METRICS</Text>
-        <Text style={styles.tagline}>Mide tu juego. Supera tus límites.</Text>
+    <View style={styles.container}>
+      <Text style={styles.title}>METRIX Analytics</Text>
 
-        <View style={styles.headerTextContainer}>
-          <Text style={styles.title}>Tu rendimiento profesional, hoy.</Text>
-          <Text style={styles.description}>
-            Transforma tus datos en decisiones inteligentes y lleva tu juego al siguiente nivel.
-          </Text>
-        </View>
+      {}
+      <TextInput
+        style={styles.input}
+        placeholder="Correo electrónico"
+        value={email}
+        onChangeText={setEmail}
+        keyboardType="email-address"
+        autoCapitalize="none"
+        placeholderTextColor="#999"
+      />
 
-        {/* Botones de Redes Sociales */}
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity style={styles.socialButton}>
-            <Text style={styles.socialText}>Continuar con Google</Text>
-          </TouchableOpacity>
+      <TextInput
+        style={styles.input}
+        placeholder="Contraseña"
+        value={password}
+        onChangeText={setPassword}
+        secureTextEntry
+        placeholderTextColor="#999"
+      />
 
-          <TouchableOpacity style={styles.socialButton}>
-            <Text style={styles.socialText}>Continuar con Apple</Text>
-          </TouchableOpacity>
-        </View>
+      {}
+      <TouchableOpacity 
+        style={[styles.buttonMain, isLoading && { opacity: 0.7 }]} 
+        onPress={() => handleAuthSimulado('Email')}
+        disabled={isLoading}
+      >
+        {isLoading ? (
+          <ActivityIndicator color="#FFF" />
+        ) : (
+          <Text style={styles.buttonText}>Iniciar Sesión</Text>
+        )}
+      </TouchableOpacity>
+
+      <Text style={styles.orText}>o continúa con</Text>
+
+      {}
+      <View style={styles.socialContainer}>
+        <TouchableOpacity 
+          style={styles.buttonSocial} 
+          onPress={() => handleAuthSimulado('Google')}
+          disabled={isLoading}
+        >
+          <Text style={styles.socialText}>Google</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={styles.buttonSocial} 
+          onPress={() => handleAuthSimulado('Apple')}
+          disabled={isLoading}
+        >
+          <Text style={styles.socialText}>Apple</Text>
+        </TouchableOpacity>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#050A0E', 
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: 30,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  brand: {
-    color: '#4FD1C5', 
-    fontWeight: 'bold',
-    letterSpacing: 2,
-  },
-  tagline: {
-    color: '#A0AEC0',
-    fontSize: 14,
-    marginBottom: 60,
-  },
-  headerTextContainer: {
-    width: '100%',
-    marginBottom: 100,
-  },
-  title: {
-    color: '#FFFFFF',
-    fontSize: 24,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 10,
-  },
-  description: {
-    color: '#CBD5E0',
-    fontSize: 14,
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-  buttonContainer: {
-    width: '100%',
-    gap: 15,
-  },
-  socialButton: {
-    width: '100%',
-    paddingVertical: 15,
-    borderRadius: 15,
-    borderWidth: 1,
-    borderColor: '#2D3748',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    alignItems: 'center',
-  },
-  socialText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-  },
+  container: { flex: 1, justifyContent: 'center', padding: 25, backgroundColor: '#ffffff' },
+  title: { fontSize: 32, fontWeight: '800', textAlign: 'center', marginBottom: 40, color: '#1A1A1A' },
+  input: { backgroundColor: '#F0F0F0', padding: 18, borderRadius: 12, marginBottom: 15, fontSize: 16, color: '#1A1A1A' },
+  buttonMain: { backgroundColor: '#007AFF', padding: 18, borderRadius: 12, alignItems: 'center', marginTop: 10 },
+  buttonText: { color: '#fff', fontWeight: '700', fontSize: 16 },
+  orText: { textAlign: 'center', marginVertical: 25, color: '#888', fontSize: 14 },
+  socialContainer: { flexDirection: 'row', justifyContent: 'space-between' },
+  buttonSocial: { padding: 15, borderWidth: 1.5, borderColor: '#E5E5E5', borderRadius: 12, width: '48%', alignItems: 'center' },
+  socialText: { fontWeight: '600', color: '#444' }
 });
