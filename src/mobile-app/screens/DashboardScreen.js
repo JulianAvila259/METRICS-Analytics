@@ -4,7 +4,7 @@ import { StyleSheet, View, Text, TextInput, ScrollView, TouchableOpacity, Alert 
 export default function DashboardScreen({ navigation }) {
   const [activeTab, setActiveTab] = useState('Partidos');
 
-  console.log('DashboardScreen rendered'); // Para debug
+  console.log('DashboardScreen rendered'); 
 
   const partidos = [
     { id: 1, equipo: 'Futbol Club Magma', fecha: '22 abril 2024', torneo: 'Torneo Regional', stats: '31 km/h · 9.3 km · 14.5 km' },
@@ -15,11 +15,9 @@ export default function DashboardScreen({ navigation }) {
   const handleTabPress = (tab) => {
     setActiveTab(tab);
     if (tab === 'Inicio') {
-      // Navegar a Home
     } else if (tab === 'Partidos') {
-      // Ya estamos en Partidos
     } else if (tab === 'Perfil') {
-      // Navegar a Perfil
+
     }
   };
 
