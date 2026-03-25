@@ -40,6 +40,7 @@ export default function LoginScreen({ navigation }) {
             style={styles.input}
             value={email}
             onChangeText={setEmail}
+            returnKeyType="next"
           />
           <TextInput
             placeholder="Contraseña"
@@ -48,6 +49,8 @@ export default function LoginScreen({ navigation }) {
             secureTextEntry
             value={password}
             onChangeText={setPassword}
+            returnKeyType="done"
+            onSubmitEditing={handleLogin}
           />
           <TouchableOpacity>
             <Text style={styles.forgot}>¿Olvidaste tu contraseña?</Text>
@@ -63,11 +66,11 @@ export default function LoginScreen({ navigation }) {
           <View style={styles.line} />
         </View>
 
-        <TouchableOpacity style={styles.socialButton}>
+        <TouchableOpacity style={styles.socialButton } onPress={handleLogin}>
           <Text style={styles.socialText}>Continuar con Google</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.socialButton}>
+        <TouchableOpacity style={styles.socialButton} onPress={handleLogin}>
           <Text style={styles.socialText}>Continuar con Apple</Text>
         </TouchableOpacity>
 
