@@ -22,7 +22,7 @@ export default function LoginScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.title}>Metrix</Text>
+        <Text style={styles.title}>Vortex</Text>
         <Text style={styles.subtitle}>Sports AI</Text>
         <Text style={styles.heading}>
           Tu rendimiento profesional, hoy.
