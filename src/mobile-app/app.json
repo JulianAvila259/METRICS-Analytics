@@ -1,0 +1,54 @@
+{
+  "expo": {
+    "name": "Vortex Sports AI",
+    "slug": "vortex-sports-ai",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0A0E17"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.vortex.sportsai",
+      "buildNumber": "1.0.0"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0A0E17"
+      },
+      "package": "com.vortex.sportsai",
+      "versionCode": 1,
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Permite acceder a tus fotos para analizar partidos de fútbol",
+          "cameraPermission": "Permite usar la cámara para grabar partidos de fútbol"
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "your-project-id-here"
+      }
+    }
+  }
+}
