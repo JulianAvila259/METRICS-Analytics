@@ -25,7 +25,7 @@ export default function LoginScreen({ navigation }) {
         <Text style={styles.title}>Vortex</Text>
         <Text style={styles.subtitle}>Sports AI</Text>
         <Text style={styles.heading}>
-          Tu rendimiento profesional, hoy.
+          Tu rendimiento profesional a la mano.
         </Text>
         <Image
           source={require('../data/jugador.png')}
@@ -59,20 +59,6 @@ export default function LoginScreen({ navigation }) {
             <Text style={styles.loginText}>Iniciar sesión</Text>
           </TouchableOpacity>
         </View>
-
-        <View style={styles.dividerContainer}>
-          <View style={styles.line} />
-          <Text style={styles.or}>o continúa con</Text>
-          <View style={styles.line} />
-        </View>
-
-        <TouchableOpacity style={styles.socialButton } onPress={handleLogin}>
-          <Text style={styles.socialText}>Continuar con Google</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.socialButton} onPress={handleLogin}>
-          <Text style={styles.socialText}>Continuar con Apple</Text>
-        </TouchableOpacity>
 
       </ScrollView>
     </SafeAreaView>
