@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   StyleSheet,
   View,
@@ -6,31 +6,39 @@ import {
   TouchableOpacity,
   Image,
   ScrollView,
+  Pressable,
 } from 'react-native';
 import BottomNav from '../components/BottomNav';
 
 export default function ResultadosScreen({ navigation, route }) {
   const selectedPartido = route?.params?.partido;
-  const player = {
-    nombre: selectedPartido?.equipo ?? 'Daniel Pérez',
-    posicion: selectedPartido?.torneo ? 'Partido' : 'Delantero',
-    minutos: selectedPartido?.fecha ?? '75 min',
+  const [activeRadarStat, setActiveRadarStat] = useState('velocidad');
+
+  const partido = selectedPartido || {
+    equipo: 'Daniel Pérez',
+    torneo: 'Partido de muestra',
+    fecha: '75 min',
     velocidad: '32.4 km/h',
     distancia: '15.8 km',
     goles: 2,
     tiros: 12,
     pases: 19,
     sprints: 19,
+    vision: '65',
+    precision: '65',
+    rendimiento: '18',
   };
 
-  const quickStats = [
-    { id: 'velocidad', icon: '⚡', value: '32.4 km/h' },
-    { id: 'distancia', icon: '📍', value: '15.8 km' },
-    { id: 'sprints', icon: '🏃', value: '19' },
-    { id: 'vision', icon: '👁️', value: '65' },
-    { id: 'precision', icon: '🎯', value: '65' },
-    { id: 'rendimiento', icon: '📊', value: '18' },
+  const radarAxes = [
+    { id: 'velocidad', icon: '⚡', label: 'Velocidad', value: partido.velocidad, unit: 'km/h', max: 35 },
+    { id: 'distancia', icon: '📍', label: 'Distancia', value: partido.distancia, unit: 'km', max: 12 },
+    { id: 'sprints', icon: '🏃', label: 'Sprints', value: partido.sprints, unit: '', max: 25 },
+    { id: 'pases', icon: '🎯', label: 'Pases', value: partido.pases, unit: '', max: 30 },
+    { id: 'goles', icon: '⚽', label: 'Goles', value: partido.goles, unit: '', max: 5 },
+    { id: 'tiros', icon: '🎯', label: 'Tiros', value: partido.tiros, unit: '', max: 18 },
   ];
+
+  const selectedAxis = radarAxes.find((axis) => axis.id === activeRadarStat) || radarAxes[0];
 
   return (
     <View style={styles.screen}>
@@ -56,12 +64,12 @@ export default function ResultadosScreen({ navigation, route }) {
         <View style={styles.playerCard}>
           <Image source={require('../data/juang.png')} style={styles.avatar} />
           <View style={styles.playerInfo}>
-            <Text style={styles.playerName}>{player.nombre}</Text>
+            <Text style={styles.playerName}>{partido.equipo}</Text>
             <Text style={styles.playerRole}>
-              {player.posicion} · {player.minutos}
+              {partido.torneo} · {partido.fecha}
             </Text>
             <Text style={styles.playerMetrics}>
-              {player.velocidad} · {player.distancia} · {player.goles} ⚽ · {player.pases}
+              {partido.velocidad} · {partido.distancia} · {partido.goles} ⚽ · {partido.pases}
             </Text>
           </View>
         </View>
@@ -76,24 +84,63 @@ export default function ResultadosScreen({ navigation, route }) {
             <View style={[styles.axisDiagonal, styles.diagonalOne]} />
             <View style={[styles.axisDiagonal, styles.diagonalTwo]} />
             <View style={styles.coreGlow} />
-            <View style={styles.polygonOne} />
-            <View style={styles.polygonTwo} />
 
-            <Text style={[styles.radarLabel, styles.labelTop]}>32.4 km/h</Text>
-            <Text style={[styles.radarLabel, styles.labelLeftTop]}>15.8 km</Text>
-            <Text style={[styles.radarLabel, styles.labelLeft]}>19{`\n`}Sprints</Text>
-            <Text style={[styles.radarLabel, styles.labelBottom]}>19{`\n`}Pases</Text>
-            <Text style={[styles.radarLabel, styles.labelRightBottom]}>2{`\n`}Goles</Text>
-            <Text style={[styles.radarLabel, styles.labelRight]}>12{`\n`}Tiros</Text>
+            {radarAxes.map((axis, index) => {
+              const angle = (Math.PI / 3) * index - Math.PI / 2;
+              const normalized = Math.min(Math.max(axis.value / axis.max, 0), 1);
+              const length = 95 * normalized + 20;
+              const x = 155 + Math.cos(angle) * length;
+              const y = 155 + Math.sin(angle) * length;
+
+              return (
+                <React.Fragment key={axis.id}>
+                  <View
+                    style={[
+                      styles.metricLine,
+                      {
+                        height: length,
+                        transform: [{ rotate: `${angle}rad` }],
+                        backgroundColor: activeRadarStat === axis.id ? '#39C8FF' : 'rgba(57, 200, 255, 0.3)',
+                      },
+                    ]}
+                  />
+                  <View
+                    style={[
+                      styles.radarMarker,
+                      {
+                        top: y - 16,
+                        left: x - 16,
+                        backgroundColor: activeRadarStat === axis.id ? '#00D1FF' : '#0C3B74',
+                      },
+                    ]}
+                  >
+                    <Text style={styles.markerIcon}>{axis.icon}</Text>
+                  </View>
+                </React.Fragment>
+              );
+            })}
+
           </View>
         </View>
 
-        <View style={styles.statsGrid}>
-          {quickStats.map((stat) => (
-            <View key={stat.id} style={styles.statItem}>
-              <Text style={styles.statIcon}>{stat.icon}</Text>
-              <Text style={styles.statValue}>{stat.value}</Text>
-            </View>
+        <View style={styles.radarInfoCard}>
+          <Text style={styles.radarInfoTitle}>{selectedAxis.label}</Text>
+          <Text style={styles.radarInfoValue}>{selectedAxis.value}{selectedAxis.unit}</Text>
+        </View>
+
+        <View style={styles.radarLegend}>
+          {radarAxes.map((axis) => (
+            <Pressable
+              key={axis.id}
+              style={[
+                styles.legendButton,
+                activeRadarStat === axis.id && styles.legendButtonActive,
+              ]}
+              onPress={() => setActiveRadarStat(axis.id)}
+            >
+              <Text style={styles.legendIcon}>{axis.icon}</Text>
+              <Text style={styles.legendText}>{axis.label}</Text>
+            </Pressable>
           ))}
         </View>
 
@@ -215,6 +262,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
+    overflow: 'hidden',
   },
   outerRing: {
     position: 'absolute',
@@ -294,6 +342,83 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 179, 71, 0.35)',
     transform: [{ rotate: '-8deg' }, { skewX: '4deg' }],
   },
+  metricLine: {
+    position: 'absolute',
+    width: 2,
+    left: 154,
+    top: 155,
+    backgroundColor: 'rgba(57, 200, 255, 0.3)',
+    borderRadius: 1,
+  },
+  radarMarker: {
+    position: 'absolute',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  markerIcon: {
+    color: '#FFFFFF',
+    fontSize: 16,
+  },
+  radarInfoCard: {
+    backgroundColor: 'rgba(7, 31, 64, 0.95)',
+    borderRadius: 20,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(57, 200, 255, 0.18)',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  radarInfoTitle: {
+    color: '#D7E8FF',
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 6,
+  },
+  radarInfoValue: {
+    color: '#FFFFFF',
+    fontSize: 20,
+    fontWeight: '800',
+    marginBottom: 6,
+  },
+  radarInfoSubtitle: {
+    color: '#8AA8D4',
+    fontSize: 12,
+    textAlign: 'center',
+  },
+  radarLegend: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  legendButton: {
+    width: '48%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 16,
+    backgroundColor: '#081830',
+    borderWidth: 1,
+    borderColor: '#152B4F',
+    marginBottom: 12,
+  },
+  legendButtonActive: {
+    borderColor: '#00D1FF',
+    backgroundColor: '#0F3468',
+  },
+  legendIcon: {
+    fontSize: 16,
+    marginRight: 10,
+  },
+  legendText: {
+    color: '#D7E8FF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
   radarLabel: {
     position: 'absolute',
     color: '#E6EEF9',
@@ -322,27 +447,6 @@ const styles = StyleSheet.create({
   labelRight: {
     right: 4,
     top: 132,
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    marginBottom: 26,
-  },
-  statItem: {
-    width: '31%',
-    alignItems: 'center',
-    marginBottom: 18,
-  },
-  statIcon: {
-    fontSize: 20,
-    marginBottom: 6,
-  },
-  statValue: {
-    color: '#39C8FF',
-    fontSize: 16,
-    fontWeight: '600',
-    textAlign: 'center',
   },
   downloadButton: {
     borderWidth: 2,
