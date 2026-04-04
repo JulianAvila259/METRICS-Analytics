@@ -5,6 +5,24 @@ import BottomNav from '../components/BottomNav';
 export default function DashboardScreen({ navigation }) {
   const [searchQuery, setSearchQuery] = useState('');
 
+  const goToResultados = (partido) => {
+    navigation.navigate('Resultados', { partido });
+  };
+
+  const handleSearchSubmit = () => {
+    const query = searchQuery.trim().toLowerCase();
+    if (query === '') {
+      return;
+    }
+
+    const match = filteredPartidos[0];
+    if (match) {
+      goToResultados(match);
+    } else {
+      Alert.alert('No encontrado', 'No se encontró ningún partido para esa búsqueda.');
+    }
+  };
+
   const partidos = [
     { id: 1, equipo: 'Futbol Club Magma', fecha: '22 abril 2024', torneo: 'Torneo Regional', stats: '31 km/h · 9.3 km · 14.5 km' },
     { id: 2, equipo: 'CD Nova Force', fecha: '18 abril 2024', torneo: 'Liga Metropolitana', stats: '29 km/h · 8.7 km · 13.8 km' },
@@ -44,6 +62,8 @@ export default function DashboardScreen({ navigation }) {
         placeholderTextColor="#666"
         value={searchQuery}
         onChangeText={setSearchQuery}
+        onSubmitEditing={handleSearchSubmit}
+        returnKeyType="search"
       />
 
       <Text style={styles.sectionTitle}>Partidos recientes</Text>
@@ -51,11 +71,15 @@ export default function DashboardScreen({ navigation }) {
       <ScrollView style={styles.list} contentContainerStyle={styles.listContent}>
         {filteredPartidos.length > 0 ? (
           filteredPartidos.map((partido) => (
-            <View key={partido.id} style={styles.card}>
+            <TouchableOpacity
+              key={partido.id}
+              style={styles.card}
+              onPress={() => goToResultados(partido)}
+            >
               <Text style={styles.cardTitle}>{partido.equipo}</Text>
               <Text style={styles.cardSub}>{partido.fecha} · {partido.torneo}</Text>
               <Text style={styles.cardStats}>{partido.stats}</Text>
-            </View>
+            </TouchableOpacity>
           ))
         ) : (
           <View style={styles.noResults}>

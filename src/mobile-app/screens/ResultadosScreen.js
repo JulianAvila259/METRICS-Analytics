@@ -9,11 +9,12 @@ import {
 } from 'react-native';
 import BottomNav from '../components/BottomNav';
 
-export default function ResultadosScreen({ navigation }) {
+export default function ResultadosScreen({ navigation, route }) {
+  const selectedPartido = route?.params?.partido;
   const player = {
-    nombre: 'Daniel Pérez',
-    posicion: 'Delantero',
-    minutos: '75 min',
+    nombre: selectedPartido?.equipo ?? 'Daniel Pérez',
+    posicion: selectedPartido?.torneo ? 'Partido' : 'Delantero',
+    minutos: selectedPartido?.fecha ?? '75 min',
     velocidad: '32.4 km/h',
     distancia: '15.8 km',
     goles: 2,
@@ -43,9 +44,13 @@ export default function ResultadosScreen({ navigation }) {
           <View style={styles.topSpacer} />
         </View>
 
-        <Text style={styles.heading}>Métricas del jugador descargadas</Text>
+        <Text style={styles.heading}>
+          {selectedPartido ? `Resultados de ${selectedPartido.equipo}` : 'Métricas del jugador descargadas'}
+        </Text>
         <Text style={styles.description}>
-          A continuación, los resultados detallados de {player.nombre}.
+          {selectedPartido
+            ? `A continuación, los resultados del partido ${selectedPartido.equipo} (${selectedPartido.fecha}) en ${selectedPartido.torneo}.`
+            : `A continuación, los resultados detallados de ${player.nombre}.`}
         </Text>
 
         <View style={styles.playerCard}>
