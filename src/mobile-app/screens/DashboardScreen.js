@@ -39,6 +39,7 @@ export default function DashboardScreen({ navigation }) {
       vision: '72',
       precision: '68',
       rendimiento: '85',
+      asistencias: 2,
     },
     {
       id: 2,
@@ -55,6 +56,7 @@ export default function DashboardScreen({ navigation }) {
       vision: '70',
       precision: '63',
       rendimiento: '78',
+      asistencias: 1,
     },
     {
       id: 3,
@@ -71,6 +73,7 @@ export default function DashboardScreen({ navigation }) {
       vision: '75',
       precision: '71',
       rendimiento: '88',
+      asistencias: 3,
     },
   ];
 
