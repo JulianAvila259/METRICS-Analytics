@@ -1,13 +1,25 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { StyleSheet, View, Text, TextInput, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import BottomNav from '../components/BottomNav';
 
 export default function DashboardScreen({ navigation }) {
+  const [searchQuery, setSearchQuery] = useState('');
+
   const partidos = [
     { id: 1, equipo: 'Futbol Club Magma', fecha: '22 abril 2024', torneo: 'Torneo Regional', stats: '31 km/h · 9.3 km · 14.5 km' },
     { id: 2, equipo: 'CD Nova Force', fecha: '18 abril 2024', torneo: 'Liga Metropolitana', stats: '29 km/h · 8.7 km · 13.8 km' },
     { id: 3, equipo: 'Atlético Vortex', fecha: '10 abril 2024', torneo: 'Copa de la Ciudad', stats: '30 km/h · 8.9 km · 12.9 km' },
   ];
+
+  const filteredPartidos = partidos.filter((partido) => {
+    const query = searchQuery.toLowerCase();
+    if (query === '') return true;
+    return (
+      partido.equipo.toLowerCase().includes(query) ||
+      partido.fecha.toLowerCase().includes(query) ||
+      partido.torneo.toLowerCase().includes(query)
+    );
+  });
 
   const handleLogout = () => {
     navigation.reset({
@@ -30,18 +42,26 @@ export default function DashboardScreen({ navigation }) {
         style={styles.searchBar}
         placeholder="Torneo, fecha, equipo"
         placeholderTextColor="#666"
+        value={searchQuery}
+        onChangeText={setSearchQuery}
       />
 
       <Text style={styles.sectionTitle}>Partidos recientes</Text>
 
       <ScrollView style={styles.list} contentContainerStyle={styles.listContent}>
-        {partidos.map((partido) => (
-          <View key={partido.id} style={styles.card}>
-            <Text style={styles.cardTitle}>{partido.equipo}</Text>
-            <Text style={styles.cardSub}>{partido.fecha} · {partido.torneo}</Text>
-            <Text style={styles.cardStats}>{partido.stats}</Text>
+        {filteredPartidos.length > 0 ? (
+          filteredPartidos.map((partido) => (
+            <View key={partido.id} style={styles.card}>
+              <Text style={styles.cardTitle}>{partido.equipo}</Text>
+              <Text style={styles.cardSub}>{partido.fecha} · {partido.torneo}</Text>
+              <Text style={styles.cardStats}>{partido.stats}</Text>
+            </View>
+          ))
+        ) : (
+          <View style={styles.noResults}>
+            <Text style={styles.noResultsText}>No se encontraron partidos.</Text>
           </View>
-        ))}
+        )}
 
         <TouchableOpacity style={styles.uploadButton} onPress={() => Alert.alert('Subir Partido', 'Abre la cámara para grabar un partido')}>
           <Text style={styles.uploadText}>Sube tu primer partido</Text>
@@ -144,6 +164,14 @@ const styles = StyleSheet.create({
   },
   uploadText: {
     color: '#00D1FF',
+    fontSize: 14,
+  },
+  noResults: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  noResultsText: {
+    color: '#888',
     fontSize: 14,
   },
 });
