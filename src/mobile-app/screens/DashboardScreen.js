@@ -133,7 +133,7 @@ export default function DashboardScreen({ navigation }) {
         )}
 
         <TouchableOpacity style={styles.uploadButton} onPress={() => Alert.alert('Subir Partido', 'Abre la cámara para grabar un partido')}>
-          <Text style={styles.uploadText}>Sube tu primer partido</Text>
+          <Text style={styles.uploadText}>Sube tu video</Text>
         </TouchableOpacity>
       </ScrollView>
 
