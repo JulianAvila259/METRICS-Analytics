@@ -14,9 +14,19 @@ export default function LoginScreen({ navigation }) {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isNavigating, setIsNavigating] = useState(false);
 
   const handleLogin = () => {
     navigation.navigate('Dashboard');
+  };
+
+  const handleForgotPassword = () => {
+    if (!isNavigating) {
+      setIsNavigating(true);
+      navigation.navigate('ForgotPassword');
+      // Reset after a short delay to allow re-press if needed
+      setTimeout(() => setIsNavigating(false), 1000);
+    }
   };
 
   return (
@@ -32,6 +42,7 @@ export default function LoginScreen({ navigation }) {
           style={styles.image}
           height={220}
           resizeMode="contain"
+          onError={() => console.log('Error loading player.png')}
         />
         <View style={styles.form}>
           <TextInput
@@ -52,7 +63,7 @@ export default function LoginScreen({ navigation }) {
             returnKeyType="done"
             onSubmitEditing={handleLogin}
           />
-          <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')}>
+          <TouchableOpacity onPress={handleForgotPassword} disabled={isNavigating}>
             <Text style={styles.forgot}>¿Olvidaste tu contraseña?</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
