@@ -28,7 +28,7 @@ export default function LoginScreen({ navigation }) {
           Tu rendimiento profesional a la mano.
         </Text>
         <Image
-          source={require('../data/jugador.png')}
+          source={require('../data/player.png')}
           style={styles.image}
           height={220}
           resizeMode="contain"
@@ -52,7 +52,7 @@ export default function LoginScreen({ navigation }) {
             returnKeyType="done"
             onSubmitEditing={handleLogin}
           />
-          <TouchableOpacity>
+          <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')}>
             <Text style={styles.forgot}>¿Olvidaste tu contraseña?</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>

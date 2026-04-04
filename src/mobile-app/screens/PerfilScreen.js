@@ -26,7 +26,7 @@ export default function PerfilScreen({ navigation }) {
         </View>
 
         <View style={styles.profileCard}>
-          <Image source={require('../data/juang.png')} style={styles.avatar} />
+          <Image source={require('../data/player.png')} style={styles.avatar} />
           <Text style={styles.name}>{user.nombre}</Text>
           <Text style={styles.email}>{user.email}</Text>
         </View>

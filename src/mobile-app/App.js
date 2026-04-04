@@ -5,6 +5,7 @@ import DashboardScreen from './screens/DashboardScreen';
 import LoginScreen from './screens/LoginScreen';
 import PerfilScreen from './screens/PerfilScreen';
 import ResultadosScreen from './screens/ResultadosScreen';
+import ForgotPasswordScreen from './screens/ForgotPasswordScreen';
 
 const Stack = createStackNavigator();
 
@@ -20,6 +21,10 @@ export default function App() {
         <Stack.Screen 
           name="Login" 
           component={LoginScreen}
+        />
+        <Stack.Screen 
+          name="ForgotPassword" 
+          component={ForgotPasswordScreen}
         />
         <Stack.Screen 
           name="Dashboard" 
