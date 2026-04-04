@@ -3,7 +3,6 @@ import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
 
 const tabs = [
   { key: 'Dashboard', label: 'Partidos' },
-  { key: 'Resultados', label: 'Resultados' },
   { key: 'Perfil', label: 'Perfil' },
 ];
 

@@ -7,12 +7,16 @@ import {
   Image,
   ScrollView,
   Pressable,
+  Modal,
+  ProgressBarAndroid,
+  Platform,
 } from 'react-native';
-import BottomNav from '../components/BottomNav';
 
 export default function ResultadosScreen({ navigation, route }) {
   const selectedPartido = route?.params?.partido;
   const [activeRadarStat, setActiveRadarStat] = useState('velocidad');
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState(0);
 
   const partido = selectedPartido || {
     equipo: 'Daniel Pérez',
@@ -39,6 +43,24 @@ export default function ResultadosScreen({ navigation, route }) {
   ];
 
   const selectedAxis = radarAxes.find((axis) => axis.id === activeRadarStat) || radarAxes[0];
+
+  const simulateDownload = () => {
+    setIsDownloading(true);
+    setDownloadProgress(0);
+
+    const interval = setInterval(() => {
+      setDownloadProgress((prev) => {
+        if (prev >= 1) {
+          clearInterval(interval);
+          setIsDownloading(false);
+          // Aquí podrías agregar lógica para guardar o compartir el archivo
+          alert('Paquete descargado exitosamente. Archivo guardado en Descargas.');
+          return 1;
+        }
+        return prev + 0.1;
+      });
+    }, 300);
+  };
 
   return (
     <View style={styles.screen}>
@@ -144,7 +166,7 @@ export default function ResultadosScreen({ navigation, route }) {
           ))}
         </View>
 
-        <TouchableOpacity style={styles.downloadButton}>
+        <TouchableOpacity style={styles.downloadButton} onPress={simulateDownload}>
           <Text style={styles.downloadText}>⬇ Descargar paquete (223 MB)</Text>
         </TouchableOpacity>
 
@@ -153,7 +175,27 @@ export default function ResultadosScreen({ navigation, route }) {
         </TouchableOpacity>
       </ScrollView>
 
-      <BottomNav navigation={navigation} activeTab="Resultados" />
+      <Modal visible={isDownloading} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Descargando paquete...</Text>
+            <Text style={styles.modalSubtitle}>Esto puede tomar unos momentos</Text>
+            {Platform.OS === 'android' ? (
+              <ProgressBarAndroid
+                styleAttr="Horizontal"
+                indeterminate={false}
+                progress={downloadProgress}
+                color="#00D1FF"
+              />
+            ) : (
+              <View style={styles.progressBar}>
+                <View style={[styles.progressFill, { width: `${downloadProgress * 100}%` }]} />
+              </View>
+            )}
+            <Text style={styles.progressText}>{Math.round(downloadProgress * 100)}%</Text>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -474,6 +516,50 @@ const styles = StyleSheet.create({
   },
   cancelText: {
     color: '#C7D8F6',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#0A0E17',
+    borderRadius: 20,
+    padding: 30,
+    alignItems: 'center',
+    width: '80%',
+    borderWidth: 1,
+    borderColor: '#00D1FF',
+  },
+  modalTitle: {
+    color: '#FFFFFF',
+    fontSize: 20,
+    fontWeight: '700',
+    marginBottom: 10,
+  },
+  modalSubtitle: {
+    color: '#B7C6E0',
+    fontSize: 14,
+    marginBottom: 20,
+  },
+  progressBar: {
+    width: '100%',
+    height: 8,
+    backgroundColor: '#161B22',
+    borderRadius: 4,
+    overflow: 'hidden',
+    marginBottom: 10,
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#00D1FF',
+    borderRadius: 4,
+  },
+  progressText: {
+    color: '#39C8FF',
     fontSize: 16,
     fontWeight: '600',
   },
