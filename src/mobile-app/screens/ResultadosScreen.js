@@ -14,32 +14,93 @@ import {
 
 export default function ResultadosScreen({ navigation, route }) {
   const selectedPartido = route?.params?.partido;
+  console.log('ResultadosScreen - selectedPartido:', selectedPartido);
+  
   const [activeRadarStat, setActiveRadarStat] = useState('velocidad');
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(0);
 
   const partido = selectedPartido || {
-    equipo: 'Daniel Pérez',
-    torneo: 'Partido de muestra',
-    fecha: '75 min',
-    velocidad: '32.4 km/h',
-    distancia: '15.8 km',
+    equipo: 'Partido Analizado',
+    torneo: 'Análisis IA',
+    fecha: 'Video procesado',
+    velocidad: '32 km/h',
+    distancia: '9.8 km',
     goles: 2,
     tiros: 12,
-    pases: 19,
-    sprints: 19,
-    vision: '65',
-    precision: '65',
-    rendimiento: '18',
+    pases: 28,
+    sprints: 25,
+    vision: '76',
+    precision: '72',
+    rendimiento: '89',
+    asistencias: 1,
+  };
+
+  // Función para parsear valores numéricos de strings
+  const parseNumericValue = (value, unit) => {
+    if (typeof value === 'number') return value;
+    if (typeof value === 'string') {
+      const num = parseFloat(value.replace(unit, '').trim());
+      return isNaN(num) ? 0 : num;
+    }
+    return 0;
   };
 
   const radarAxes = [
-    { id: 'velocidad', icon: '⚡', label: 'Velocidad', value: partido.velocidad, unit: 'km/h', max: 35 },
-    { id: 'distancia', icon: '📍', label: 'Distancia', value: partido.distancia, unit: 'km', max: 12 },
-    { id: 'sprints', icon: '🏃', label: 'Sprints', value: partido.sprints, unit: '', max: 25 },
-    { id: 'pases', icon: '🎯', label: 'Pases', value: partido.pases, unit: '', max: 30 },
-    { id: 'goles', icon: '⚽', label: 'Goles', value: partido.goles, unit: '', max: 5 },
-    { id: 'tiros', icon: '🎯', label: 'Tiros', value: partido.tiros, unit: '', max: 18 },
+    { 
+      id: 'velocidad', 
+      icon: '⚡', 
+      label: 'Velocidad', 
+      value: parseNumericValue(partido.velocidad, 'km/h'), 
+      displayValue: parseNumericValue(partido.velocidad, 'km/h'),
+      unit: 'km/h', 
+      max: 35 
+    },
+    { 
+      id: 'distancia', 
+      icon: '📍', 
+      label: 'Distancia', 
+      value: parseNumericValue(partido.distancia, 'km'), 
+      displayValue: parseNumericValue(partido.distancia, 'km'),
+      unit: 'km', 
+      max: 12 
+    },
+    { 
+      id: 'sprints', 
+      icon: '🏃', 
+      label: 'Sprints', 
+      value: partido.sprints || 0, 
+      displayValue: partido.sprints || 0,
+      unit: '', 
+      max: 25 
+    },
+    { 
+      id: 'pases', 
+      icon: '🎯', 
+      label: 'Pases', 
+      value: partido.pases || 0, 
+      displayValue: partido.pases || 0,
+      unit: '', 
+      max: 30 
+    },
+    { 
+      id: 'goles', 
+      icon: '⚽', 
+      label: 'Goles', 
+      value: partido.goles || 0, 
+      displayValue: partido.goles || 0,
+      unit: '', 
+      max: 5 
+    },
+    { 
+      id: 'tiros', 
+      icon: '🎯', 
+      label: 'Tiros', 
+      value: partido.tiros || 0, 
+      displayValue: partido.tiros || 0,
+      unit: '', 
+      max: 18 
+    },
   ];
 
   const selectedAxis = radarAxes.find((axis) => axis.id === activeRadarStat) || radarAxes[0];
@@ -64,6 +125,7 @@ export default function ResultadosScreen({ navigation, route }) {
 
   return (
     <View style={styles.screen}>
+      {console.log('ResultadosScreen rendering')}
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         <View style={styles.topRow}>
           <TouchableOpacity onPress={() => navigation.navigate('Dashboard')} style={styles.backButton}>
@@ -80,7 +142,7 @@ export default function ResultadosScreen({ navigation, route }) {
         <Text style={styles.description}>
           {selectedPartido
             ? `A continuación, los resultados del partido ${selectedPartido.equipo} (${selectedPartido.fecha}) en ${selectedPartido.torneo}.`
-            : `A continuación, los resultados detallados de ${player.nombre}.`}
+            : `A continuación, los resultados detallados del análisis.`}
         </Text>
 
         <View style={styles.playerCard}>
@@ -113,6 +175,8 @@ export default function ResultadosScreen({ navigation, route }) {
               const length = 95 * normalized + 20;
               const x = 155 + Math.cos(angle) * length;
               const y = 155 + Math.sin(angle) * length;
+
+              console.log(`Axis ${axis.id}: value=${axis.value}, normalized=${normalized}, length=${length}, x=${x}, y=${y}`);
 
               return (
                 <React.Fragment key={axis.id}>
@@ -147,7 +211,7 @@ export default function ResultadosScreen({ navigation, route }) {
 
         <View style={styles.radarInfoCard}>
           <Text style={styles.radarInfoTitle}>{selectedAxis.label}</Text>
-          <Text style={styles.radarInfoValue}>{selectedAxis.value}{selectedAxis.unit}</Text>
+          <Text style={styles.radarInfoValue}>{selectedAxis.displayValue}{selectedAxis.unit}</Text>
         </View>
 
         <View style={styles.radarLegend}>
