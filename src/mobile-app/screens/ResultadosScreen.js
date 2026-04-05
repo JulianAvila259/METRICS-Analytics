@@ -1,630 +1,251 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
+  ScrollView,
   StyleSheet,
-  View,
   Text,
   TouchableOpacity,
-  Image,
-  ScrollView,
-  Pressable,
-  Modal,
-  ProgressBarAndroid,
-  Platform,
+  View,
 } from 'react-native';
+import BottomNav from '../components/BottomNav';
+import { useAppData } from '../context/AppDataContext';
 
-export default function ResultadosScreen({ navigation, route }) {
-  const selectedPartido = route?.params?.partido;
-  console.log('ResultadosScreen - selectedPartido:', selectedPartido);
-  
-  const [activeRadarStat, setActiveRadarStat] = useState('velocidad');
-  const [isDownloading, setIsDownloading] = useState(false);
-  const [downloadProgress, setDownloadProgress] = useState(0);
+const metricCards = [
+  { key: 'velocidadMaxima', label: 'Velocidad', suffix: 'km/h', icon: '⚡' },
+  { key: 'distancia', label: 'Distancia', suffix: 'km', icon: '📍' },
+  { key: 'sprints', label: 'Sprints', suffix: '', icon: '🏃' },
+  { key: 'goles', label: 'Goles', suffix: '', icon: '⚽' },
+  { key: 'pases', label: 'Pases', suffix: '', icon: '🎯' },
+  { key: 'rendimiento', label: 'Rendimiento', suffix: '', icon: '📊' },
+];
 
-  const partido = selectedPartido || {
-    equipo: 'Partido Analizado',
-    torneo: 'Análisis IA',
-    fecha: 'Video procesado',
-    velocidad: '32 km/h',
-    distancia: '9.8 km',
-    goles: 2,
-    tiros: 12,
-    pases: 28,
-    sprints: 25,
-    vision: '76',
-    precision: '72',
-    rendimiento: '89',
-    asistencias: 1,
-  };
+export default function ResultadosScreen({ navigation }) {
+  const { currentUser } = useAppData();
+  const partido = currentUser?.partidos?.[0] || null;
 
-  // Función para parsear valores numéricos de strings
-  const parseNumericValue = (value, unit) => {
-    if (typeof value === 'number') return value;
-    if (typeof value === 'string') {
-      const num = parseFloat(value.replace(unit, '').trim());
-      return isNaN(num) ? 0 : num;
-    }
-    return 0;
-  };
-
-  const radarAxes = [
-    { 
-      id: 'velocidad', 
-      icon: '⚡', 
-      label: 'Velocidad', 
-      value: parseNumericValue(partido.velocidad, 'km/h'), 
-      displayValue: parseNumericValue(partido.velocidad, 'km/h'),
-      unit: 'km/h', 
-      max: 35 
-    },
-    { 
-      id: 'distancia', 
-      icon: '📍', 
-      label: 'Distancia', 
-      value: parseNumericValue(partido.distancia, 'km'), 
-      displayValue: parseNumericValue(partido.distancia, 'km'),
-      unit: 'km', 
-      max: 12 
-    },
-    { 
-      id: 'sprints', 
-      icon: '🏃', 
-      label: 'Sprints', 
-      value: partido.sprints || 0, 
-      displayValue: partido.sprints || 0,
-      unit: '', 
-      max: 25 
-    },
-    { 
-      id: 'pases', 
-      icon: '🎯', 
-      label: 'Pases', 
-      value: partido.pases || 0, 
-      displayValue: partido.pases || 0,
-      unit: '', 
-      max: 30 
-    },
-    { 
-      id: 'goles', 
-      icon: '⚽', 
-      label: 'Goles', 
-      value: partido.goles || 0, 
-      displayValue: partido.goles || 0,
-      unit: '', 
-      max: 5 
-    },
-    { 
-      id: 'tiros', 
-      icon: '🎯', 
-      label: 'Tiros', 
-      value: partido.tiros || 0, 
-      displayValue: partido.tiros || 0,
-      unit: '', 
-      max: 18 
-    },
-  ];
-
-  const selectedAxis = radarAxes.find((axis) => axis.id === activeRadarStat) || radarAxes[0];
-
-  const simulateDownload = () => {
-    setIsDownloading(true);
-    setDownloadProgress(0);
-
-    const interval = setInterval(() => {
-      setDownloadProgress((prev) => {
-        if (prev >= 1) {
-          clearInterval(interval);
-          setIsDownloading(false);
-          // Aquí podrías agregar lógica para guardar o compartir el archivo
-          alert('Paquete descargado exitosamente. Archivo guardado en Descargas.');
-          return 1;
-        }
-        return prev + 0.1;
-      });
-    }, 300);
-  };
+  if (!partido) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.contentOnly}>
+          <Text style={styles.backText}>Resultados</Text>
+          <Text style={styles.emptyTitle}>Todavía no tienes resultados</Text>
+          <Text style={styles.emptyText}>
+            Carga un partido desde la sección Partidos para generar métricas y visualizar este resumen.
+          </Text>
+          <TouchableOpacity style={styles.primaryButton} onPress={() => navigation.navigate('UploadMatch')}>
+            <Text style={styles.primaryButtonText}>Subir partido</Text>
+          </TouchableOpacity>
+        </View>
+        <BottomNav activeRoute="Resultados" navigation={navigation} />
+      </View>
+    );
+  }
 
   return (
-    <View style={styles.screen}>
-      {console.log('ResultadosScreen rendering')}
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-        <View style={styles.topRow}>
-          <TouchableOpacity onPress={() => navigation.navigate('Dashboard')} style={styles.backButton}>
-            <Text style={styles.backArrow}>←</Text>
-            <Text style={styles.backText}>Partidos</Text>
-          </TouchableOpacity>
-          <Text style={styles.pageTitle}>Resultados</Text>
-          <View style={styles.topSpacer} />
-        </View>
-
-        <Text style={styles.heading}>
-          {selectedPartido ? `Resultados de ${selectedPartido.equipo}` : 'Métricas del jugador descargadas'}
-        </Text>
-        <Text style={styles.description}>
-          {selectedPartido
-            ? `A continuación, los resultados del partido ${selectedPartido.equipo} (${selectedPartido.fecha}) en ${selectedPartido.torneo}.`
-            : `A continuación, los resultados detallados del análisis.`}
-        </Text>
-
-        <View style={styles.playerCard}>
-          <Image source={require('../data/juang.png')} style={styles.avatar} />
-          <View style={styles.playerInfo}>
-            <Text style={styles.playerName}>{partido.equipo}</Text>
-            <Text style={styles.playerRole}>
-              {partido.torneo} · {partido.fecha}
-            </Text>
-            <Text style={styles.playerMetrics}>
-              {partido.velocidad} · {partido.distancia} · {partido.goles} ⚽ · {partido.pases}
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.radarWrapper}>
-          <View style={styles.radarBoard}>
-            <View style={styles.outerRing} />
-            <View style={styles.middleRing} />
-            <View style={styles.innerRing} />
-            <View style={styles.axisVertical} />
-            <View style={styles.axisHorizontal} />
-            <View style={[styles.axisDiagonal, styles.diagonalOne]} />
-            <View style={[styles.axisDiagonal, styles.diagonalTwo]} />
-            <View style={styles.coreGlow} />
-
-            {radarAxes.map((axis, index) => {
-              const angle = (Math.PI / 3) * index - Math.PI / 2;
-              const normalized = Math.min(Math.max(axis.value / axis.max, 0), 1);
-              const length = 95 * normalized + 20;
-              const x = 155 + Math.cos(angle) * length;
-              const y = 155 + Math.sin(angle) * length;
-
-              console.log(`Axis ${axis.id}: value=${axis.value}, normalized=${normalized}, length=${length}, x=${x}, y=${y}`);
-
-              return (
-                <React.Fragment key={axis.id}>
-                  <View
-                    style={[
-                      styles.metricLine,
-                      {
-                        height: length,
-                        transform: [{ rotate: `${angle}rad` }],
-                        backgroundColor: activeRadarStat === axis.id ? '#39C8FF' : 'rgba(57, 200, 255, 0.3)',
-                      },
-                    ]}
-                  />
-                  <View
-                    style={[
-                      styles.radarMarker,
-                      {
-                        top: y - 16,
-                        left: x - 16,
-                        backgroundColor: activeRadarStat === axis.id ? '#00D1FF' : '#0C3B74',
-                      },
-                    ]}
-                  >
-                    <Text style={styles.markerIcon}>{axis.icon}</Text>
-                  </View>
-                </React.Fragment>
-              );
-            })}
-
-          </View>
-        </View>
-
-        <View style={styles.radarInfoCard}>
-          <Text style={styles.radarInfoTitle}>{selectedAxis.label}</Text>
-          <Text style={styles.radarInfoValue}>{selectedAxis.displayValue}{selectedAxis.unit}</Text>
-        </View>
-
-        <View style={styles.radarLegend}>
-          {radarAxes.map((axis) => (
-            <Pressable
-              key={axis.id}
-              style={[
-                styles.legendButton,
-                activeRadarStat === axis.id && styles.legendButtonActive,
-              ]}
-              onPress={() => setActiveRadarStat(axis.id)}
-            >
-              <Text style={styles.legendIcon}>{axis.icon}</Text>
-              <Text style={styles.legendText}>{axis.label}</Text>
-            </Pressable>
-          ))}
-        </View>
-
-        <TouchableOpacity style={styles.downloadButton} onPress={simulateDownload}>
-          <Text style={styles.downloadText}>⬇ Descargar paquete (223 MB)</Text>
+    <View style={styles.container}>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <TouchableOpacity onPress={() => navigation.navigate('Dashboard')}>
+          <Text style={styles.backText}>← Atrás</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.cancelButton} onPress={() => navigation.navigate('Dashboard')}>
-          <Text style={styles.cancelText}>Cancelar</Text>
+        <Text style={styles.title}>Paquete</Text>
+        <Text style={styles.heading}>Métricas del jugador descargadas</Text>
+        <Text style={styles.description}>
+          A continuación, los resultados detallados de {currentUser.nombre} {currentUser.apellido}.
+        </Text>
+
+        <TouchableOpacity
+          style={styles.playerCard}
+          onPress={() => navigation.navigate('PartidoDetalle', { matchId: partido.id })}
+        >
+          <View style={styles.avatar} />
+          <View style={styles.playerInfo}>
+            <Text style={styles.playerName}>{currentUser.nombre} {currentUser.apellido}</Text>
+            <Text style={styles.playerSub}>Jugador · {partido.stats.minutos} min</Text>
+            <Text style={styles.playerStats}>
+              {partido.stats.velocidadMaxima} km/h · {partido.stats.distancia} km · {partido.stats.goles} ⚽ · {partido.stats.sprints}
+            </Text>
+          </View>
+        </TouchableOpacity>
+
+        <View style={styles.radarCard}>
+          <Text style={styles.radarTitle}>Resumen del último partido</Text>
+          <View style={styles.radarGrid}>
+            {metricCards.map((metric) => (
+              <View key={metric.key} style={styles.metricBox}>
+                <Text style={styles.metricIcon}>{metric.icon}</Text>
+                <Text style={styles.metricValue}>
+                  {partido.stats[metric.key]}{metric.suffix ? ` ${metric.suffix}` : ''}
+                </Text>
+                <Text style={styles.metricLabel}>{metric.label}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+
+        <TouchableOpacity
+          style={styles.downloadButton}
+          onPress={() => navigation.navigate('PartidoDetalle', { matchId: partido.id })}
+        >
+          <Text style={styles.downloadText}>Ver detalle y descargar paquete</Text>
         </TouchableOpacity>
       </ScrollView>
 
-      <Modal visible={isDownloading} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Descargando paquete...</Text>
-            <Text style={styles.modalSubtitle}>Esto puede tomar unos momentos</Text>
-            {Platform.OS === 'android' ? (
-              <ProgressBarAndroid
-                styleAttr="Horizontal"
-                indeterminate={false}
-                progress={downloadProgress}
-                color="#00D1FF"
-              />
-            ) : (
-              <View style={styles.progressBar}>
-                <View style={[styles.progressFill, { width: `${downloadProgress * 100}%` }]} />
-              </View>
-            )}
-            <Text style={styles.progressText}>{Math.round(downloadProgress * 100)}%</Text>
-          </View>
-        </View>
-      </Modal>
+      <BottomNav activeRoute="Resultados" navigation={navigation} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: '#060C1A',
-  },
   container: {
     flex: 1,
-    backgroundColor: '#060C1A',
+    backgroundColor: '#050B1D',
   },
-  content: {
-    paddingTop: 28,
-    paddingHorizontal: 22,
-    paddingBottom: 40,
+  contentOnly: {
+    flex: 1,
+    paddingHorizontal: 24,
+    paddingTop: 70,
   },
-  topRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 18,
-  },
-  backButton: {
-    width: 88,
-  },
-  backArrow: {
-    color: '#D7E8FF',
-    fontSize: 26,
-    lineHeight: 28,
+  scrollContent: {
+    paddingHorizontal: 24,
+    paddingTop: 60,
+    paddingBottom: 24,
   },
   backText: {
-    color: '#D7E8FF',
-    fontSize: 16,
+    color: '#AFC2DD',
+    fontSize: 18,
+    marginBottom: 14,
   },
-  pageTitle: {
-    color: '#FFFFFF',
-    fontSize: 22,
-    fontWeight: '600',
-  },
-  topSpacer: {
-    width: 88,
+  title: {
+    color: '#fff',
+    fontSize: 28,
+    fontWeight: '700',
+    marginBottom: 6,
   },
   heading: {
-    color: '#FFFFFF',
-    fontSize: 22,
+    color: '#fff',
+    fontSize: 24,
     fontWeight: '600',
-    marginBottom: 8,
+    marginBottom: 10,
   },
   description: {
-    color: '#B7C6E0',
-    fontSize: 14,
-    lineHeight: 20,
-    marginBottom: 14,
+    color: '#B9C2D0',
+    fontSize: 16,
+    lineHeight: 23,
+    marginBottom: 18,
   },
   playerCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#0C1A38',
-    borderRadius: 20,
     borderWidth: 2,
     borderColor: '#00AFFF',
-    padding: 14,
-    marginBottom: 26,
-    shadowColor: '#00AFFF',
-    shadowOpacity: 0.2,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 0 },
-    elevation: 4,
+    borderRadius: 22,
+    padding: 16,
+    marginBottom: 24,
+    backgroundColor: 'rgba(13, 31, 56, 0.7)',
   },
   avatar: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    marginRight: 14,
-    backgroundColor: '#123B7A',
+    width: 78,
+    height: 78,
+    borderRadius: 39,
+    backgroundColor: '#173F7A',
+    marginRight: 16,
   },
   playerInfo: {
     flex: 1,
   },
   playerName: {
-    color: '#FFFFFF',
+    color: '#fff',
     fontSize: 18,
     fontWeight: '700',
-    marginBottom: 4,
   },
-  playerRole: {
-    color: '#A9C7EF',
+  playerSub: {
+    color: '#9DB2C8',
     fontSize: 15,
-    marginBottom: 4,
+    marginTop: 4,
   },
-  playerMetrics: {
-    color: '#39C8FF',
+  playerStats: {
+    color: '#39C5FF',
     fontSize: 16,
+    marginTop: 8,
     fontWeight: '600',
   },
-  radarWrapper: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 26,
-  },
-  radarBoard: {
-    width: 310,
-    height: 310,
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
-    overflow: 'hidden',
-  },
-  outerRing: {
-    position: 'absolute',
-    width: 220,
-    height: 220,
-    borderRadius: 110,
-    borderWidth: 2,
-    borderColor: '#0097FF',
-  },
-  middleRing: {
-    position: 'absolute',
-    width: 150,
-    height: 150,
-    borderRadius: 75,
+  radarCard: {
+    backgroundColor: 'rgba(12, 20, 39, 0.9)',
+    borderRadius: 22,
+    padding: 20,
     borderWidth: 1,
-    borderColor: 'rgba(0, 151, 255, 0.55)',
+    borderColor: '#12355C',
   },
-  innerRing: {
-    position: 'absolute',
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    borderWidth: 1,
-    borderColor: 'rgba(0, 151, 255, 0.45)',
-  },
-  axisVertical: {
-    position: 'absolute',
-    width: 2,
-    height: 230,
-    backgroundColor: 'rgba(0, 151, 255, 0.75)',
-  },
-  axisHorizontal: {
-    position: 'absolute',
-    width: 230,
-    height: 2,
-    backgroundColor: 'rgba(0, 151, 255, 0.75)',
-  },
-  axisDiagonal: {
-    position: 'absolute',
-    width: 2,
-    height: 230,
-    backgroundColor: 'rgba(0, 151, 255, 0.4)',
-  },
-  diagonalOne: {
-    transform: [{ rotate: '52deg' }],
-  },
-  diagonalTwo: {
-    transform: [{ rotate: '-52deg' }],
-  },
-  coreGlow: {
-    position: 'absolute',
-    width: 150,
-    height: 150,
-    borderRadius: 75,
-    backgroundColor: 'rgba(255, 149, 0, 0.18)',
-    shadowColor: '#FF9500',
-    shadowOpacity: 0.35,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 0 },
-    elevation: 6,
-  },
-  polygonOne: {
-    position: 'absolute',
-    width: 128,
-    height: 128,
-    backgroundColor: 'rgba(255, 149, 0, 0.22)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 179, 71, 0.55)',
-    transform: [{ rotate: '9deg' }, { skewY: '6deg' }],
-  },
-  polygonTwo: {
-    position: 'absolute',
-    width: 142,
-    height: 142,
-    backgroundColor: 'rgba(255, 149, 0, 0.12)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 179, 71, 0.35)',
-    transform: [{ rotate: '-8deg' }, { skewX: '4deg' }],
-  },
-  metricLine: {
-    position: 'absolute',
-    width: 2,
-    left: 154,
-    top: 155,
-    backgroundColor: 'rgba(57, 200, 255, 0.3)',
-    borderRadius: 1,
-  },
-  radarMarker: {
-    position: 'absolute',
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  markerIcon: {
-    color: '#FFFFFF',
-    fontSize: 16,
-  },
-  radarInfoCard: {
-    backgroundColor: 'rgba(7, 31, 64, 0.95)',
-    borderRadius: 20,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(57, 200, 255, 0.18)',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  radarInfoTitle: {
-    color: '#D7E8FF',
-    fontSize: 14,
+  radarTitle: {
+    color: '#fff',
+    fontSize: 18,
     fontWeight: '700',
-    marginBottom: 6,
-  },
-  radarInfoValue: {
-    color: '#FFFFFF',
-    fontSize: 20,
-    fontWeight: '800',
-    marginBottom: 6,
-  },
-  radarInfoSubtitle: {
-    color: '#8AA8D4',
-    fontSize: 12,
+    marginBottom: 16,
     textAlign: 'center',
   },
-  radarLegend: {
+  radarGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    marginBottom: 20,
   },
-  legendButton: {
+  metricBox: {
     width: '48%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
+    borderRadius: 18,
+    backgroundColor: '#091325',
+    paddingVertical: 18,
     paddingHorizontal: 14,
-    borderRadius: 16,
-    backgroundColor: '#081830',
+    marginBottom: 14,
+    alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#152B4F',
-    marginBottom: 12,
+    borderColor: '#17385C',
   },
-  legendButtonActive: {
-    borderColor: '#00D1FF',
-    backgroundColor: '#0F3468',
+  metricIcon: {
+    fontSize: 22,
+    marginBottom: 8,
   },
-  legendIcon: {
-    fontSize: 16,
-    marginRight: 10,
-  },
-  legendText: {
-    color: '#D7E8FF',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  radarLabel: {
-    position: 'absolute',
-    color: '#E6EEF9',
-    fontSize: 16,
+  metricValue: {
+    color: '#00CFFF',
+    fontSize: 18,
+    fontWeight: '700',
     textAlign: 'center',
-    lineHeight: 22,
   },
-  labelTop: {
-    top: 0,
-  },
-  labelLeftTop: {
-    left: 8,
-    top: 66,
-  },
-  labelLeft: {
-    left: 4,
-    top: 132,
-  },
-  labelBottom: {
-    bottom: 0,
-  },
-  labelRightBottom: {
-    right: 8,
-    top: 190,
-  },
-  labelRight: {
-    right: 4,
-    top: 132,
+  metricLabel: {
+    color: '#9DB2C8',
+    fontSize: 13,
+    marginTop: 8,
   },
   downloadButton: {
+    marginTop: 18,
+    borderRadius: 26,
     borderWidth: 2,
-    borderColor: '#00AFFF',
-    borderRadius: 28,
+    borderColor: '#00CFFF',
     paddingVertical: 16,
     alignItems: 'center',
-    marginBottom: 18,
   },
   downloadText: {
-    color: '#39C8FF',
-    fontSize: 16,
+    color: '#00CFFF',
+    fontSize: 18,
     fontWeight: '600',
   },
-  cancelButton: {
-    alignSelf: 'center',
-    minWidth: 170,
-    backgroundColor: '#102A62',
-    borderWidth: 2,
-    borderColor: '#1F8CFF',
-    borderRadius: 22,
-    paddingVertical: 14,
-    paddingHorizontal: 28,
-    alignItems: 'center',
-  },
-  cancelText: {
-    color: '#C7D8F6',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    backgroundColor: '#0A0E17',
-    borderRadius: 20,
-    padding: 30,
-    alignItems: 'center',
-    width: '80%',
-    borderWidth: 1,
-    borderColor: '#00D1FF',
-  },
-  modalTitle: {
-    color: '#FFFFFF',
-    fontSize: 20,
+  emptyTitle: {
+    color: '#fff',
+    fontSize: 24,
     fontWeight: '700',
-    marginBottom: 10,
+    marginBottom: 12,
   },
-  modalSubtitle: {
-    color: '#B7C6E0',
-    fontSize: 14,
-    marginBottom: 20,
+  emptyText: {
+    color: '#9DB2C8',
+    lineHeight: 22,
+    marginBottom: 18,
   },
-  progressBar: {
-    width: '100%',
-    height: 8,
-    backgroundColor: '#161B22',
-    borderRadius: 4,
-    overflow: 'hidden',
-    marginBottom: 10,
-  },
-  progressFill: {
-    height: '100%',
+  primaryButton: {
     backgroundColor: '#00D1FF',
-    borderRadius: 4,
+    paddingVertical: 15,
+    borderRadius: 14,
+    alignItems: 'center',
   },
-  progressText: {
-    color: '#39C8FF',
-    fontSize: 16,
-    fontWeight: '600',
+  primaryButtonText: {
+    color: '#000',
+    fontWeight: '700',
   },
 });

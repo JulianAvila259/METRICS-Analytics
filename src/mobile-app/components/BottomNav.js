@@ -1,34 +1,32 @@
 import React from 'react';
-import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 const tabs = [
-  { key: 'Dashboard', label: 'Partidos' },
-  { key: 'Perfil', label: 'Perfil' },
+  { label: 'Partidos', route: 'Dashboard' },
+  { label: 'Resultados', route: 'Resultados' },
+  { label: 'Perfil', route: 'Perfil' },
 ];
 
-export default function BottomNav({ navigation, activeTab }) {
-  const goTo = (routeName) => {
-    if (routeName === activeTab) {
-      return;
-    }
-
-    navigation.navigate(routeName);
-  };
-
+export default function BottomNav({ activeRoute, navigation }) {
   return (
     <View style={styles.tabBar}>
-      {tabs.map((tab) => (
-        <TouchableOpacity
-          key={tab.key}
-          onPress={() => goTo(tab.key)}
-          style={styles.tabItemContainer}
-          activeOpacity={0.8}
-        >
-          <Text style={[styles.tabItem, activeTab === tab.key && styles.activeTab]}>
-            {tab.label}
-          </Text>
-        </TouchableOpacity>
-      ))}
+      {tabs.map((tab) => {
+        const isActive = activeRoute === tab.route;
+
+        return (
+          <TouchableOpacity
+            key={tab.route}
+            style={styles.tabItemContainer}
+            onPress={() => {
+              if (!isActive) {
+                navigation.navigate(tab.route);
+              }
+            }}
+          >
+            <Text style={[styles.tabItem, isActive && styles.activeTab]}>{tab.label}</Text>
+          </TouchableOpacity>
+        );
+      })}
     </View>
   );
 }
@@ -37,10 +35,7 @@ const styles = StyleSheet.create({
   tabBar: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    alignItems: 'center',
-    paddingTop: 14,
-    paddingBottom: 18,
-    paddingHorizontal: 10,
+    paddingVertical: 18,
     borderTopWidth: 1,
     borderTopColor: '#161B22',
     backgroundColor: '#0A0E17',
@@ -48,7 +43,6 @@ const styles = StyleSheet.create({
   tabItemContainer: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
     paddingVertical: 6,
   },
   tabItem: {
@@ -58,6 +52,5 @@ const styles = StyleSheet.create({
   },
   activeTab: {
     color: '#00D1FF',
-    fontWeight: '700',
   },
 });

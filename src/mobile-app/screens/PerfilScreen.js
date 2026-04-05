@@ -1,36 +1,23 @@
 import React from 'react';
 import {
-  StyleSheet,
-  View,
-  Text,
   Image,
   ScrollView,
-  Dimensions,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import BottomNav from '../components/BottomNav';
-
-const { width } = Dimensions.get('window');
+import { useAppData } from '../context/AppDataContext';
 
 export default function PerfilScreen({ navigation }) {
-  const user = {
-    nombre: 'Juan Gonzales',
-    email: 'fJuanG1@email.com',
-    equipo: 'Colombianitos FC',
-    posicion: 'Delantero',
-    edad: 21,
-  };
+  const { currentUser } = useAppData();
 
-  const estadisticasAcumuladas = {
-    partidosJugados: 3,
-    golesTotales: 6, // 2 + 1 + 3
-    asistencias: 6, // 2 + 1 + 3
-    distanciaRecorrida: '26.9 km', // 9.3 + 8.7 + 8.9
-    velocidadPromedio: '30 km/h', // promedio de 31, 29, 30
-    sprintsTotales: 58, // 21 + 17 + 20
-  };
+  const totalPartidos = currentUser?.partidos?.length || 0;
+  const ultimoPartido = currentUser?.partidos?.[0] || null;
 
   return (
-    <View style={styles.screen}>
+    <View style={styles.wrapper}>
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         <View style={styles.header}>
           <Text style={styles.brand}>VORTEX</Text>
@@ -38,65 +25,41 @@ export default function PerfilScreen({ navigation }) {
         </View>
 
         <View style={styles.profileCard}>
-          <Image source={require('../data/player.png')} style={styles.avatar} />
-          <Text style={styles.name}>{user.nombre}</Text>
-          <Text style={styles.email}>{user.email}</Text>
+          <Image source={require('../data/juang.png')} style={styles.avatar} />
+          <Text style={styles.name}>{currentUser?.nombre} {currentUser?.apellido}</Text>
+          <Text style={styles.email}>{currentUser?.correo}</Text>
+          <Text style={styles.username}>@{currentUser?.usuario}</Text>
         </View>
 
         <View style={styles.infoContainer}>
           <View style={styles.infoCard}>
-            <Text style={styles.label}>Equipo</Text>
-            <Text style={styles.value}>{user.equipo}</Text>
-          </View>
-
-          <View style={styles.infoCard}>
-            <Text style={styles.label}>Posición</Text>
-            <Text style={styles.value}>{user.posicion}</Text>
-          </View>
-
-          <View style={styles.infoCard}>
             <Text style={styles.label}>Edad</Text>
-            <Text style={styles.value}>{user.edad} años</Text>
+            <Text style={styles.value}>{currentUser?.edad} años</Text>
+          </View>
+
+          <View style={styles.infoCard}>
+            <Text style={styles.label}>Total de partidos</Text>
+            <Text style={styles.value}>{totalPartidos}</Text>
+          </View>
+
+          <View style={styles.infoCard}>
+            <Text style={styles.label}>Último partido</Text>
+            <Text style={styles.value}>{ultimoPartido ? ultimoPartido.nombrePartido : 'Sin partidos cargados'}</Text>
           </View>
         </View>
 
-        <Text style={styles.sectionTitle}>Estadísticas Acumuladas</Text>
-        <View style={styles.estadisticasGrid}>
-          <View style={styles.estadisticaCard}>
-            <Text style={styles.estadisticaValue}>{estadisticasAcumuladas.partidosJugados}</Text>
-            <Text style={styles.estadisticaLabel}>Partidos Jugados</Text>
-          </View>
-          <View style={styles.estadisticaCard}>
-            <Text style={styles.estadisticaValue}>{estadisticasAcumuladas.golesTotales}</Text>
-            <Text style={styles.estadisticaLabel}>Goles Totales</Text>
-          </View>
-          <View style={styles.estadisticaCard}>
-            <Text style={styles.estadisticaValue}>{estadisticasAcumuladas.asistencias}</Text>
-            <Text style={styles.estadisticaLabel}>Asistencias</Text>
-          </View>
-          <View style={styles.estadisticaCard}>
-            <Text style={styles.estadisticaValue}>{estadisticasAcumuladas.distanciaRecorrida}</Text>
-            <Text style={styles.estadisticaLabel}>Distancia Recorrida</Text>
-          </View>
-          <View style={styles.estadisticaCard}>
-            <Text style={styles.estadisticaValue}>{estadisticasAcumuladas.velocidadPromedio}</Text>
-            <Text style={styles.estadisticaLabel}>Velocidad Promedio</Text>
-          </View>
-          <View style={styles.estadisticaCard}>
-            <Text style={styles.estadisticaValue}>{estadisticasAcumuladas.sprintsTotales}</Text>
-            <Text style={styles.estadisticaLabel}>Sprints Totales</Text>
-          </View>
-        </View>
-
+        <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('UploadMatch')}>
+          <Text style={styles.buttonText}>Subir un nuevo partido</Text>
+        </TouchableOpacity>
       </ScrollView>
 
-      <BottomNav navigation={navigation} activeTab="Perfil" />
+      <BottomNav activeRoute="Perfil" navigation={navigation} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
+  wrapper: {
     flex: 1,
     backgroundColor: '#0A0E17',
   },
@@ -146,6 +109,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginTop: 5,
   },
+  username: {
+    color: '#00D1FF',
+    marginTop: 8,
+    fontWeight: '600',
+  },
   infoContainer: {
     gap: 15,
   },
@@ -166,37 +134,15 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginTop: 5,
   },
-  sectionTitle: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
+  button: {
     marginTop: 30,
-    marginBottom: 15,
-  },
-  estadisticasGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-  estadisticaCard: {
-    width: '48%',
-    backgroundColor: '#161B22',
-    borderRadius: 15,
+    backgroundColor: '#00D1FF',
     padding: 15,
-    marginBottom: 15,
+    borderRadius: 25,
     alignItems: 'center',
-    borderLeftWidth: 4,
-    borderLeftColor: '#00D1FF',
   },
-  estadisticaValue: {
-    color: '#39C8FF',
-    fontSize: 24,
+  buttonText: {
+    color: '#0A0E17',
     fontWeight: 'bold',
-  },
-  estadisticaLabel: {
-    color: '#B7C6E0',
-    fontSize: 12,
-    textAlign: 'center',
-    marginTop: 5,
   },
 });
