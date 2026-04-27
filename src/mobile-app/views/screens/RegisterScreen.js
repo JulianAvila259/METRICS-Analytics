@@ -9,8 +9,8 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useAppData } from '../context/AppDataContext';
-import { showMessage } from '../utils/notify';
+import { useAppData } from '../../context/AppDataContext';
+import { showMessage } from '../../services/notify';
 
 const initialForm = {
   nombre: '',
@@ -19,6 +19,7 @@ const initialForm = {
   correo: '',
   usuario: '',
   password: '',
+  posicion: '',
 };
 
 export default function RegisterScreen({ navigation }) {
@@ -32,7 +33,7 @@ export default function RegisterScreen({ navigation }) {
     }));
   };
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     const requiredFields = Object.entries(form).filter(([, value]) => !String(value).trim());
 
     if (requiredFields.length > 0) {
@@ -40,7 +41,7 @@ export default function RegisterScreen({ navigation }) {
       return;
     }
 
-    const result = register(form);
+    const result = await register(form);
 
     if (!result.ok) {
       Alert.alert('No fue posible registrar el usuario', result.message);

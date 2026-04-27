@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Image,
   ScrollView,
@@ -8,13 +8,22 @@ import {
   View,
 } from 'react-native';
 import BottomNav from '../components/BottomNav';
-import { useAppData } from '../context/AppDataContext';
+import { useAppData } from '../../context/AppDataContext';
 
 export default function PerfilScreen({ navigation }) {
-  const { currentUser } = useAppData();
+  const { currentUser, getMatchesForCurrentUser } = useAppData();
+  const [partidos, setPartidos] = useState([]);
 
-  const totalPartidos = currentUser?.partidos?.length || 0;
-  const ultimoPartido = currentUser?.partidos?.[0] || null;
+  useEffect(() => {
+    const loadMatches = async () => {
+      const matches = await getMatchesForCurrentUser();
+      setPartidos(matches);
+    };
+    loadMatches();
+  }, [getMatchesForCurrentUser]);
+
+  const totalPartidos = partidos?.length || 0;
+  const ultimoPartido = partidos?.[0] || null;
 
   return (
     <View style={styles.wrapper}>
@@ -25,16 +34,16 @@ export default function PerfilScreen({ navigation }) {
         </View>
 
         <View style={styles.profileCard}>
-          <Image source={require('../data/juang.png')} style={styles.avatar} />
+          <Image source={require('../../assets/juang.png')} style={styles.avatar} />
           <Text style={styles.name}>{currentUser?.nombre} {currentUser?.apellido}</Text>
-          <Text style={styles.email}>{currentUser?.correo}</Text>
-          <Text style={styles.username}>@{currentUser?.usuario}</Text>
+          <Text style={styles.email}>{currentUser?.email}</Text>
+          <Text style={styles.username}>@{currentUser?.email}</Text>
         </View>
 
         <View style={styles.infoContainer}>
           <View style={styles.infoCard}>
             <Text style={styles.label}>Edad</Text>
-            <Text style={styles.value}>{currentUser?.edad} años</Text>
+            <Text style={styles.value}>{currentUser?.fechaNacimiento} años</Text>
           </View>
 
           <View style={styles.infoCard}>

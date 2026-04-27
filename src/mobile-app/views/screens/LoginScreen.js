@@ -10,26 +10,31 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useAppData } from '../context/AppDataContext';
+import { useAppData } from '../../context/AppDataContext';
 
 export default function LoginScreen({ navigation, route }) {
   const { login } = useAppData();
   const [usuario, setUsuario] = useState(route?.params?.prefilledUsername || 'juang10');
   const [password, setPassword] = useState('123456');
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
+    console.log('[LoginScreen.handleLogin] Starting login with usuario:', usuario);
+    
     if (!usuario.trim() || !password.trim()) {
       Alert.alert('Campos requeridos', 'Ingresa usuario y contraseña.');
       return;
     }
 
-    const result = login(usuario, password);
+    console.log('[LoginScreen.handleLogin] Calling context.login()...');
+    const result = await login(usuario, password);
+    console.log('[LoginScreen.handleLogin] Login result:', result);
 
     if (!result.ok) {
       Alert.alert('No fue posible iniciar sesión', result.message);
       return;
     }
 
+    console.log('[LoginScreen.handleLogin] Login successful, navigating to Dashboard');
     navigation.reset({
       index: 0,
       routes: [{ name: 'Dashboard' }],
@@ -47,7 +52,7 @@ export default function LoginScreen({ navigation, route }) {
         </Text>
 
         <Image
-          source={require('../data/jugador.png')}
+          source={require('../../assets/jugador.png')}
           style={styles.image}
           resizeMode="contain"
         />

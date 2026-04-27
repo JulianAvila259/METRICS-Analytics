@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Alert,
   ScrollView,
@@ -7,8 +7,8 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { useAppData } from '../context/AppDataContext';
-import { downloadMatchPdf } from '../utils/pdf';
+import { useAppData } from '../../context/AppDataContext';
+import { downloadMatchPdf } from '../../services/pdf';
 
 const statItems = [
   { label: 'Velocidad máxima', key: 'velocidadMaxima', suffix: 'km/h' },
@@ -26,7 +26,27 @@ const statItems = [
 export default function PartidoDetalleScreen({ navigation, route }) {
   const { currentUser, getMatchById } = useAppData();
   const { matchId } = route.params;
-  const match = getMatchById(matchId);
+  const [match, setMatch] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadMatch = async () => {
+      const m = await getMatchById(matchId);
+      setMatch(m);
+      setLoading(false);
+    };
+    loadMatch();
+  }, [getMatchById, matchId]);
+
+  const stats = match ? match.stats || match : null;
+
+  if (loading) {
+    return (
+      <View style={styles.emptyContainer}>
+        <Text style={styles.emptyTitle}>Cargando...</Text>
+      </View>
+    );
+  }
 
   if (!match) {
     return (
@@ -78,10 +98,6 @@ export default function PartidoDetalleScreen({ navigation, route }) {
           <Text style={styles.infoLabel}>Correo</Text>
           <Text style={styles.infoValue}>{currentUser.correo}</Text>
         </View>
-        <View style={styles.infoBox}>
-          <Text style={styles.infoLabel}>Video</Text>
-          <Text style={styles.infoValue}>{match.videoNombre}</Text>
-        </View>
       </View>
 
       <View style={styles.statsSection}>
@@ -89,7 +105,7 @@ export default function PartidoDetalleScreen({ navigation, route }) {
           <View key={item.key} style={styles.statRow}>
             <Text style={styles.statLabel}>{item.label}</Text>
             <Text style={styles.statValue}>
-              {match.stats[item.key]}{item.suffix ? ` ${item.suffix}` : ''}
+              {stats?.[item.key]}{item.suffix ? ` ${item.suffix}` : ''}
             </Text>
           </View>
         ))}

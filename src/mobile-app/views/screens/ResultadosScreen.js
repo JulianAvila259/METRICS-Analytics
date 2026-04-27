@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   ScrollView,
   StyleSheet,
@@ -7,7 +7,7 @@ import {
   View,
 } from 'react-native';
 import BottomNav from '../components/BottomNav';
-import { useAppData } from '../context/AppDataContext';
+import { useAppData } from '../../context/AppDataContext';
 
 const metricCards = [
   { key: 'velocidadMaxima', label: 'Velocidad', suffix: 'km/h', icon: '⚡' },
@@ -19,8 +19,32 @@ const metricCards = [
 ];
 
 export default function ResultadosScreen({ navigation }) {
-  const { currentUser } = useAppData();
-  const partido = currentUser?.partidos?.[0] || null;
+  const { currentUser, getMatchesForCurrentUser } = useAppData();
+  const [partidos, setPartidos] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadMatches = async () => {
+      const matches = await getMatchesForCurrentUser();
+      setPartidos(matches);
+      setLoading(false);
+    };
+    loadMatches();
+  }, [getMatchesForCurrentUser]);
+
+  const partido = partidos?.[0] || null;
+  const stats = partido ? partido.stats || partido : null;
+
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.contentOnly}>
+          <Text style={styles.emptyTitle}>Cargando...</Text>
+        </View>
+        <BottomNav activeRoute="Resultados" navigation={navigation} />
+      </View>
+    );
+  }
 
   if (!partido) {
     return (
@@ -60,9 +84,9 @@ export default function ResultadosScreen({ navigation }) {
           <View style={styles.avatar} />
           <View style={styles.playerInfo}>
             <Text style={styles.playerName}>{currentUser.nombre} {currentUser.apellido}</Text>
-            <Text style={styles.playerSub}>Jugador · {partido.stats.minutos} min</Text>
+            <Text style={styles.playerSub}>Jugador · {stats?.minutos} min</Text>
             <Text style={styles.playerStats}>
-              {partido.stats.velocidadMaxima} km/h · {partido.stats.distancia} km · {partido.stats.goles} ⚽ · {partido.stats.sprints}
+              {stats?.velocidadMaxima} km/h · {stats?.distancia} km · {stats?.goles} ⚽ · {stats?.sprints}
             </Text>
           </View>
         </TouchableOpacity>
@@ -74,7 +98,7 @@ export default function ResultadosScreen({ navigation }) {
               <View key={metric.key} style={styles.metricBox}>
                 <Text style={styles.metricIcon}>{metric.icon}</Text>
                 <Text style={styles.metricValue}>
-                  {partido.stats[metric.key]}{metric.suffix ? ` ${metric.suffix}` : ''}
+                  {stats?.[metric.key]}{metric.suffix ? ` ${metric.suffix}` : ''}
                 </Text>
                 <Text style={styles.metricLabel}>{metric.label}</Text>
               </View>

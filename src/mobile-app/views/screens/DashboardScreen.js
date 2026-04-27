@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import {
   Alert,
   ScrollView,
@@ -9,13 +9,20 @@ import {
   View,
 } from 'react-native';
 import BottomNav from '../components/BottomNav';
-import { useAppData } from '../context/AppDataContext';
+import { useAppData } from '../../context/AppDataContext';
 
 export default function DashboardScreen({ navigation }) {
-  const { currentUser, logout } = useAppData();
+  const { currentUser, logout, getMatchesForCurrentUser } = useAppData();
   const [search, setSearch] = useState('');
+  const [partidos, setPartidos] = useState([]);
 
-  const partidos = currentUser?.partidos || [];
+  useEffect(() => {
+    const loadMatches = async () => {
+      const matches = await getMatchesForCurrentUser();
+      setPartidos(matches);
+    };
+    loadMatches();
+  }, [getMatchesForCurrentUser]);
 
   const filteredMatches = useMemo(() => {
     const searchTerm = search.trim().toLowerCase();
@@ -30,8 +37,8 @@ export default function DashboardScreen({ navigation }) {
     });
   }, [partidos, search]);
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigation.reset({
       index: 0,
       routes: [{ name: 'Login' }],
@@ -79,7 +86,7 @@ export default function DashboardScreen({ navigation }) {
           <View style={styles.emptyCard}>
             <Text style={styles.emptyTitle}>No hay partidos para mostrar</Text>
             <Text style={styles.emptyText}>
-              Carga tu primer video para registrar un partido y generar métricas aleatorias.
+              Carga tu primer partido para generar métricas aleatorias.
             </Text>
           </View>
         )}
@@ -88,7 +95,7 @@ export default function DashboardScreen({ navigation }) {
           style={styles.uploadButton}
           onPress={() => navigation.navigate('UploadMatch')}
         >
-          <Text style={styles.uploadText}>Subir video y guardar partido</Text>
+          <Text style={styles.uploadText}>Registrar partido</Text>
         </TouchableOpacity>
 
         <TouchableOpacity

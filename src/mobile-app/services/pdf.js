@@ -69,6 +69,7 @@ const formatFileSize = (size) => {
 };
 
 export const downloadMatchPdf = async (match, currentUser) => {
+  const stats = match.stats || match;
   const lines = [
     'Resumen del jugador',
     `Jugador: ${currentUser.nombre} ${currentUser.apellido}`,
@@ -80,21 +81,19 @@ export const downloadMatchPdf = async (match, currentUser) => {
     `Partido: ${match.nombrePartido}`,
     `Fecha: ${match.fecha}`,
     `Competencia: ${match.torneo}`,
-    `Video: ${match.videoNombre}`,
-    `Tamaño del video: ${formatFileSize(match.videoSize)}`,
     `Fecha de registro: ${new Date(match.createdAt).toLocaleString()}`,
     ' ',
     'Metricas generadas',
-    `Velocidad maxima: ${match.stats.velocidadMaxima} km/h`,
-    `Distancia recorrida: ${match.stats.distancia} km`,
-    `Sprints: ${match.stats.sprints}`,
-    `Goles: ${match.stats.goles}`,
-    `Tiros: ${match.stats.tiros}`,
-    `Pases: ${match.stats.pases}`,
-    `Vision: ${match.stats.vision}`,
-    `Precision: ${match.stats.precision}`,
-    `Rendimiento: ${match.stats.rendimiento}`,
-    `Minutos jugados: ${match.stats.minutos}`,
+    `Velocidad maxima: ${stats.velocidadMaxima} km/h`,
+    `Distancia recorrida: ${stats.distancia} km`,
+    `Sprints: ${stats.sprints}`,
+    `Goles: ${stats.goles}`,
+    `Tiros: ${stats.tiros}`,
+    `Pases: ${stats.pases}`,
+    `Vision: ${stats.vision}`,
+    `Precision: ${stats.precision}`,
+    `Rendimiento: ${stats.rendimiento}`,
+    `Minutos jugados: ${stats.minutos}`,
     ' ',
     `Resumen corto: ${match.resumen}`,
   ];

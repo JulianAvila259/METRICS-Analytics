@@ -1,166 +1,92 @@
-import React, { createContext, useContext, useMemo, useState } from 'react';
+import React, { createContext, useContext, useMemo, useState, useEffect } from 'react';
+import AuthController from '../controllers/AuthController.js';
+import MatchController from '../controllers/MatchController.js';
 
 const AppDataContext = createContext(null);
 
-const randomBetween = (min, max, decimals = 0) => {
-  const value = Math.random() * (max - min) + min;
-  return Number(value.toFixed(decimals));
-};
-
-const buildStatsSummary = (stats) => {
-  return `${stats.velocidadMaxima} km/h · ${stats.distancia} km · ${stats.sprints} sprints`;
-};
-
-const createRandomStats = () => {
-  return {
-    velocidadMaxima: randomBetween(28, 35, 1),
-    distancia: randomBetween(7.5, 15.8, 1),
-    sprints: randomBetween(10, 25, 0),
-    goles: randomBetween(0, 3, 0),
-    tiros: randomBetween(2, 12, 0),
-    pases: randomBetween(12, 40, 0),
-    vision: randomBetween(55, 95, 0),
-    precision: randomBetween(50, 95, 0),
-    rendimiento: randomBetween(60, 98, 0),
-    minutos: randomBetween(55, 90, 0),
-  };
-};
-
-const createMatch = ({ nombrePartido, fecha, torneo, video }) => {
-  const stats = createRandomStats();
-
-  return {
-    id: `${Date.now()}-${Math.round(Math.random() * 100000)}`,
-    nombrePartido,
-    fecha,
-    torneo,
-    videoNombre: video?.name || 'video_partido.mp4',
-    videoSize: video?.size || null,
-    stats,
-    resumen: buildStatsSummary(stats),
-    createdAt: new Date().toISOString(),
-  };
-};
-
-const initialUsers = [
-  {
-    id: 'user-1',
-    nombre: 'Juan',
-    apellido: 'Gonzales',
-    edad: '21',
-    correo: 'juan.gonzales@email.com',
-    usuario: 'juang10',
-    password: '123456',
-    partidos: [
-      createMatch({
-        nombrePartido: 'Futbol Club Magma',
-        fecha: '22 abril 2024',
-        torneo: 'Torneo Regional',
-        video: { name: 'magma-vs-vortex.mp4', size: 228000000 },
-      }),
-      createMatch({
-        nombrePartido: 'CD Nova Force',
-        fecha: '18 abril 2024',
-        torneo: 'Liga Metropolitana',
-        video: { name: 'nova-force.mp4', size: 175000000 },
-      }),
-      createMatch({
-        nombrePartido: 'Atlético Vortex',
-        fecha: '10 abril 2024',
-        torneo: 'Copa de la Ciudad',
-        video: { name: 'atletico-vortex.mp4', size: 190000000 },
-      }),
-    ],
-  },
-  {
-    id: 'user-2',
-    nombre: 'Daniela',
-    apellido: 'Ruiz',
-    edad: '24',
-    correo: 'daniela.ruiz@email.com',
-    usuario: 'danir8',
-    password: '123456',
-    partidos: [
-      createMatch({
-        nombrePartido: 'Copa Femenina Aurora',
-        fecha: '04 mayo 2024',
-        torneo: 'Copa Regional',
-        video: { name: 'aurora-cup.mp4', size: 160000000 },
-      }),
-    ],
-  },
-];
-
 export function AppDataProvider({ children }) {
-  const [users, setUsers] = useState(initialUsers);
-  const [currentUserId, setCurrentUserId] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const currentUser = useMemo(
-    () => users.find((user) => user.id === currentUserId) || null,
-    [users, currentUserId]
-  );
+  useEffect(() => {
+    const init = async () => {
+      console.log('[AppDataContext] Starting app initialization...');
+      try {
+        console.log('[AppDataContext] Initializing AuthController...');
+        await AuthController.init();
+        console.log('[AppDataContext] AuthController initialized successfully');
+        
+        console.log('[AppDataContext] Initializing MatchController...');
+        await MatchController.init();
+        console.log('[AppDataContext] MatchController initialized successfully');
+        
+        console.log('[AppDataContext] App initialization completed');
+      } catch (error) {
+        console.error('[AppDataContext] Error initializing app:', error);
+      } finally {
+        console.log('[AppDataContext] Setting isLoading to false');
+        setIsLoading(false);
+      }
+    };
+    init();
+  }, []);
 
-  const login = (usuario, password) => {
-    const trimmedUser = usuario.trim().toLowerCase();
-    const foundUser = users.find(
-      (user) => user.usuario.toLowerCase() === trimmedUser && user.password === password
-    );
-
-    if (!foundUser) {
+  const login = async (login, password) => {
+    try {
+      console.log('[AppDataContext.login] Starting login process with login:', login);
+      const user = await AuthController.login(login, password);
+      console.log('[AppDataContext.login] Login successful, setting currentUser:', user.usuario);
+      setCurrentUser(user);
+      return {
+        ok: true,
+        user,
+      };
+    } catch (error) {
+      console.error('[AppDataContext.login] Login error:', error.message);
       return {
         ok: false,
-        message: 'Usuario o contraseña incorrectos.',
+        message: error.message,
       };
     }
-
-    setCurrentUserId(foundUser.id);
-    return {
-      ok: true,
-      user: foundUser,
-    };
   };
 
-  const register = (payload) => {
-    const normalizedUser = payload.usuario.trim().toLowerCase();
-    const normalizedEmail = payload.correo.trim().toLowerCase();
-
-    const userExists = users.some(
-      (user) =>
-        user.usuario.toLowerCase() === normalizedUser ||
-        user.correo.toLowerCase() === normalizedEmail
-    );
-
-    if (userExists) {
+  const register = async (payload) => {
+    try {
+      const user = await AuthController.register({
+        correo: payload.correo,
+        usuario: payload.usuario,
+        password: payload.password,
+        nombre: payload.nombre,
+        apellido: payload.apellido,
+        edad: payload.edad,
+        fechaNacimiento: payload.edad,
+        posicion: payload.posicion || '',
+      });
+      setCurrentUser(user);
+      return {
+        ok: true,
+        user,
+      };
+    } catch (error) {
+      console.error('Register error:', error.message);
       return {
         ok: false,
-        message: 'Ya existe un usuario o correo registrado con esos datos.',
+        message: error.message,
       };
     }
-
-    const newUser = {
-      id: `user-${Date.now()}`,
-      nombre: payload.nombre.trim(),
-      apellido: payload.apellido.trim(),
-      edad: payload.edad.trim(),
-      correo: normalizedEmail,
-      usuario: normalizedUser,
-      password: payload.password,
-      partidos: [],
-    };
-
-    setUsers((previous) => [...previous, newUser]);
-
-    return {
-      ok: true,
-      user: newUser,
-    };
   };
 
-  const logout = () => {
-    setCurrentUserId(null);
+  const logout = async () => {
+    try {
+      await AuthController.logout();
+      setCurrentUser(null);
+      return { ok: true };
+    } catch (error) {
+      return { ok: false, message: error.message };
+    }
   };
 
-  const addMatchForCurrentUser = (matchPayload) => {
+  const addMatchForCurrentUser = async (matchPayload) => {
     if (!currentUser) {
       return {
         ok: false,
@@ -168,35 +94,49 @@ export function AppDataProvider({ children }) {
       };
     }
 
-    const match = createMatch(matchPayload);
-
-    setUsers((previous) =>
-      previous.map((user) =>
-        user.id === currentUser.id
-          ? { ...user, partidos: [match, ...user.partidos] }
-          : user
-      )
-    );
-
-    return {
-      ok: true,
-      match,
-    };
+    try {
+      const match = await MatchController.createMatch(currentUser.id, matchPayload);
+      return {
+        ok: true,
+        match,
+      };
+    } catch (error) {
+      return {
+        ok: false,
+        message: error.message,
+      };
+    }
   };
 
-  const getMatchById = (matchId) => {
-    return currentUser?.partidos.find((match) => match.id === matchId) || null;
+  const getMatchById = async (matchId) => {
+    try {
+      return await MatchController.getMatchById(matchId);
+    } catch (error) {
+      console.error('Error getting match:', error);
+      return null;
+    }
+  };
+
+  const getMatchesForCurrentUser = async () => {
+    if (!currentUser) return [];
+    try {
+      return await MatchController.getMatchesByUser(currentUser.id);
+    } catch (error) {
+      console.error('Error getting matches:', error);
+      return [];
+    }
   };
 
   const value = {
-    users,
     currentUser,
     isAuthenticated: Boolean(currentUser),
+    isLoading,
     login,
     register,
     logout,
     addMatchForCurrentUser,
     getMatchById,
+    getMatchesForCurrentUser,
   };
 
   return <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>;
