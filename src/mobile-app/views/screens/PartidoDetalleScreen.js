@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   ScrollView,
@@ -9,19 +9,55 @@ import {
 } from 'react-native';
 import { useAppData } from '../../context/AppDataContext';
 import { downloadMatchPdf } from '../../services/pdf';
+import { calculateMatchIndicators, formatNumber, getMatchStats } from '../../utils/matchMetrics';
 
 const statItems = [
-  { label: 'Velocidad máxima', key: 'velocidadMaxima', suffix: 'km/h' },
-  { label: 'Distancia recorrida', key: 'distancia', suffix: 'km' },
-  { label: 'Sprints', key: 'sprints', suffix: '' },
-  { label: 'Goles', key: 'goles', suffix: '' },
-  { label: 'Tiros', key: 'tiros', suffix: '' },
-  { label: 'Pases', key: 'pases', suffix: '' },
-  { label: 'Visión', key: 'vision', suffix: '' },
-  { label: 'Precisión', key: 'precision', suffix: '' },
-  { label: 'Rendimiento', key: 'rendimiento', suffix: '' },
-  { label: 'Minutos jugados', key: 'minutos', suffix: 'min' },
+  { label: 'Velocidad máxima', key: 'velocidadMaxima', suffix: 'km/h', decimals: 1 },
+  { label: 'Distancia recorrida', key: 'distancia', suffix: 'km', decimals: 2 },
+  { label: 'Sprints realizados', key: 'sprints', suffix: '', decimals: 0 },
+  { label: 'Goles anotados', key: 'goles', suffix: '', decimals: 0 },
+  { label: 'Tiros realizados', key: 'tiros', suffix: '', decimals: 0 },
+  { label: 'Pases realizados', key: 'pases', suffix: '', decimals: 0 },
+  { label: 'Visión del juego', key: 'vision', suffix: '%', decimals: 2 },
+  { label: 'Precisión', key: 'precision', suffix: '%', decimals: 2 },
+  { label: 'Rendimiento general', key: 'rendimiento', suffix: '%', decimals: 2 },
+  { label: 'Minutos jugados', key: 'minutos', suffix: 'min', decimals: 0 },
 ];
+
+const indicatorItems = [
+  { label: 'Intensidad de sprints', key: 'intensidadSprints', suffix: 'sprints/10 min', decimals: 2 },
+  { label: 'Participación ofensiva', key: 'participacionOfensiva', suffix: 'pts', decimals: 2 },
+  { label: 'Eficacia de definición', key: 'eficaciaDefinicion', suffix: '%', decimals: 2 },
+  { label: 'Ritmo de juego', key: 'ritmoJuego', suffix: 'km/min', decimals: 3 },
+];
+
+const formatValue = (value, suffix = '', decimals = 2) => {
+  const formatted = formatNumber(value, decimals);
+  return suffix ? `${formatted} ${suffix}` : formatted;
+};
+
+const formatDateTime = (value) => {
+  if (!value) {
+    return 'No disponible';
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return String(value);
+  }
+
+  return date.toLocaleString();
+};
+
+function DetailRow({ label, value }) {
+  return (
+    <View style={styles.row}>
+      <Text style={styles.rowLabel}>{label}</Text>
+      <Text style={styles.rowValue}>{value || 'No disponible'}</Text>
+    </View>
+  );
+}
 
 export default function PartidoDetalleScreen({ navigation, route }) {
   const { currentUser, getMatchById } = useAppData();
@@ -30,15 +66,30 @@ export default function PartidoDetalleScreen({ navigation, route }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let isActive = true;
+
     const loadMatch = async () => {
-      const m = await getMatchById(matchId);
-      setMatch(m);
-      setLoading(false);
+      const loadedMatch = await getMatchById(matchId);
+
+      if (isActive) {
+        setMatch(loadedMatch);
+        setLoading(false);
+      }
     };
+
     loadMatch();
+
+    return () => {
+      isActive = false;
+    };
   }, [getMatchById, matchId]);
 
-  const stats = match ? match.stats || match : null;
+  const stats = useMemo(() => (match ? getMatchStats(match) : null), [match]);
+  const indicators = useMemo(
+    () => (match ? match.indicators || calculateMatchIndicators(stats) : null),
+    [match, stats]
+  );
+  const playerName = [currentUser?.nombre, currentUser?.apellido].filter(Boolean).join(' ') || 'Jugador';
 
   if (loading) {
     return (
@@ -61,7 +112,8 @@ export default function PartidoDetalleScreen({ navigation, route }) {
 
   const handleDownload = async () => {
     try {
-      await downloadMatchPdf(match, currentUser);
+      const result = await downloadMatchPdf({ ...match, stats, indicators }, currentUser);
+      Alert.alert('PDF generado', result?.message || 'El PDF del partido fue generado correctamente.');
     } catch (error) {
       Alert.alert('Error al descargar', 'No fue posible generar el PDF del partido.');
     }
@@ -76,7 +128,7 @@ export default function PartidoDetalleScreen({ navigation, route }) {
       <Text style={styles.title}>Detalle del partido</Text>
       <Text style={styles.subtitle}>{match.nombrePartido}</Text>
       <Text style={styles.description}>
-        Información registrada para {currentUser.nombre} {currentUser.apellido}.
+        Información registrada y calculada para {playerName}.
       </Text>
 
       <View style={styles.summaryCard}>
@@ -85,34 +137,48 @@ export default function PartidoDetalleScreen({ navigation, route }) {
         <Text style={styles.summaryStats}>{match.resumen}</Text>
       </View>
 
-      <View style={styles.infoGrid}>
-        <View style={styles.infoBox}>
-          <Text style={styles.infoLabel}>Jugador</Text>
-          <Text style={styles.infoValue}>{currentUser.nombre} {currentUser.apellido}</Text>
-        </View>
-        <View style={styles.infoBox}>
-          <Text style={styles.infoLabel}>Usuario</Text>
-          <Text style={styles.infoValue}>@{currentUser.usuario}</Text>
-        </View>
-        <View style={styles.infoBox}>
-          <Text style={styles.infoLabel}>Correo</Text>
-          <Text style={styles.infoValue}>{currentUser.correo}</Text>
-        </View>
+      <View style={styles.sectionCard}>
+        <Text style={styles.sectionTitle}>Datos del partido</Text>
+        <DetailRow label="Nombre del partido" value={match.nombrePartido} />
+        <DetailRow label="Fecha del partido" value={match.fecha} />
+        <DetailRow label="Competencia" value={match.torneo} />
+        <DetailRow label="Fecha de registro" value={formatDateTime(match.createdAt)} />
+        <DetailRow label="Resumen" value={match.resumen} />
       </View>
 
-      <View style={styles.statsSection}>
+      <View style={styles.sectionCard}>
+        <Text style={styles.sectionTitle}>Datos del jugador</Text>
+        <DetailRow label="Jugador" value={playerName} />
+        <DetailRow label="Usuario" value={currentUser?.usuario ? `@${currentUser.usuario}` : ''} />
+        <DetailRow label="Correo" value={currentUser?.correo} />
+        <DetailRow label="Edad" value={currentUser?.edad} />
+        <DetailRow label="Posición" value={currentUser?.posicion} />
+      </View>
+
+      <View style={styles.sectionCard}>
+        <Text style={styles.sectionTitle}>Métricas registradas</Text>
         {statItems.map((item) => (
-          <View key={item.key} style={styles.statRow}>
-            <Text style={styles.statLabel}>{item.label}</Text>
-            <Text style={styles.statValue}>
-              {stats?.[item.key]}{item.suffix ? ` ${item.suffix}` : ''}
-            </Text>
-          </View>
+          <DetailRow
+            key={item.key}
+            label={item.label}
+            value={formatValue(stats?.[item.key], item.suffix, item.decimals)}
+          />
+        ))}
+      </View>
+
+      <View style={styles.sectionCard}>
+        <Text style={styles.sectionTitle}>Indicadores calculados</Text>
+        {indicatorItems.map((item) => (
+          <DetailRow
+            key={item.key}
+            label={item.label}
+            value={formatValue(indicators?.[item.key], item.suffix, item.decimals)}
+          />
         ))}
       </View>
 
       <TouchableOpacity style={styles.downloadButton} onPress={handleDownload}>
-        <Text style={styles.downloadText}>Descargar paquete PDF</Text>
+        <Text style={styles.downloadText}>Generar PDF del partido</Text>
       </TouchableOpacity>
     </ScrollView>
   );
@@ -152,11 +218,11 @@ const styles = StyleSheet.create({
   },
   summaryCard: {
     backgroundColor: '#0E1624',
-    borderRadius: 20,
+    borderRadius: 18,
     padding: 20,
     borderWidth: 1,
     borderColor: '#1B2A3A',
-    marginBottom: 18,
+    marginBottom: 16,
   },
   summaryTitle: {
     color: '#fff',
@@ -172,50 +238,41 @@ const styles = StyleSheet.create({
     marginTop: 10,
     fontWeight: '700',
   },
-  infoGrid: {
-    marginBottom: 18,
-  },
-  infoBox: {
-    backgroundColor: '#111827',
-    borderRadius: 14,
-    padding: 16,
-    marginBottom: 10,
-  },
-  infoLabel: {
-    color: '#8A94A6',
-    fontSize: 12,
-    marginBottom: 6,
-  },
-  infoValue: {
-    color: '#fff',
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  statsSection: {
+  sectionCard: {
     backgroundColor: '#0E1624',
     borderRadius: 18,
     padding: 16,
     borderWidth: 1,
     borderColor: '#1B2A3A',
+    marginBottom: 16,
   },
-  statRow: {
+  sectionTitle: {
+    color: '#fff',
+    fontSize: 17,
+    fontWeight: '700',
+    marginBottom: 10,
+  },
+  row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    gap: 12,
     paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#182235',
   },
-  statLabel: {
+  rowLabel: {
     color: '#9DB2C8',
     flex: 1,
-    paddingRight: 12,
+    paddingRight: 8,
   },
-  statValue: {
+  rowValue: {
     color: '#fff',
+    flex: 1,
     fontWeight: '700',
+    textAlign: 'right',
   },
   downloadButton: {
-    marginTop: 22,
+    marginTop: 6,
     backgroundColor: '#00D1FF',
     borderRadius: 14,
     paddingVertical: 16,

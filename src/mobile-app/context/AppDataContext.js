@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useMemo, useState, useEffect } from 'react';
+import React, { createContext, useCallback, useContext, useMemo, useState, useEffect } from 'react';
 import AuthController from '../controllers/AuthController.js';
 import MatchController from '../controllers/MatchController.js';
 
@@ -31,7 +31,7 @@ export function AppDataProvider({ children }) {
     init();
   }, []);
 
-  const login = async (login, password) => {
+  const login = useCallback(async (login, password) => {
     try {
       console.log('[AppDataContext.login] Starting login process with login:', login);
       const user = await AuthController.login(login, password);
@@ -48,9 +48,9 @@ export function AppDataProvider({ children }) {
         message: error.message,
       };
     }
-  };
+  }, []);
 
-  const register = async (payload) => {
+  const register = useCallback(async (payload) => {
     try {
       const user = await AuthController.register({
         correo: payload.correo,
@@ -74,9 +74,9 @@ export function AppDataProvider({ children }) {
         message: error.message,
       };
     }
-  };
+  }, []);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     try {
       await AuthController.logout();
       setCurrentUser(null);
@@ -84,9 +84,9 @@ export function AppDataProvider({ children }) {
     } catch (error) {
       return { ok: false, message: error.message };
     }
-  };
+  }, []);
 
-  const addMatchForCurrentUser = async (matchPayload) => {
+  const addMatchForCurrentUser = useCallback(async (matchPayload) => {
     if (!currentUser) {
       return {
         ok: false,
@@ -106,18 +106,18 @@ export function AppDataProvider({ children }) {
         message: error.message,
       };
     }
-  };
+  }, [currentUser]);
 
-  const getMatchById = async (matchId) => {
+  const getMatchById = useCallback(async (matchId) => {
     try {
       return await MatchController.getMatchById(matchId);
     } catch (error) {
       console.error('Error getting match:', error);
       return null;
     }
-  };
+  }, []);
 
-  const getMatchesForCurrentUser = async () => {
+  const getMatchesForCurrentUser = useCallback(async () => {
     if (!currentUser) return [];
     try {
       return await MatchController.getMatchesByUser(currentUser.id);
@@ -125,9 +125,9 @@ export function AppDataProvider({ children }) {
       console.error('Error getting matches:', error);
       return [];
     }
-  };
+  }, [currentUser]);
 
-  const value = {
+  const value = useMemo(() => ({
     currentUser,
     isAuthenticated: Boolean(currentUser),
     isLoading,
@@ -137,7 +137,16 @@ export function AppDataProvider({ children }) {
     addMatchForCurrentUser,
     getMatchById,
     getMatchesForCurrentUser,
-  };
+  }), [
+    currentUser,
+    isLoading,
+    login,
+    register,
+    logout,
+    addMatchForCurrentUser,
+    getMatchById,
+    getMatchesForCurrentUser,
+  ]);
 
   return <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>;
 }

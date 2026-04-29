@@ -25,17 +25,18 @@ class MatchModel {
       velocidadMaxima, distancia, sprints, goles, tiros, pases,
       vision, precision, rendimiento, minutos, resumen
     } = matchData;
+    const createdAt = matchData.createdAt || new Date().toISOString();
 
     await this.db.runAsync(`
       INSERT INTO matches (
         id, userId, nombrePartido, fecha, torneo,
         velocidadMaxima, distancia, sprints, goles, tiros, pases,
-        vision, precision, rendimiento, minutos, resumen
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        vision, precision, rendimiento, minutos, resumen, createdAt
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [
       id, userId, nombrePartido, fecha, torneo,
       velocidadMaxima, distancia, sprints, goles, tiros, pases,
-      vision, precision, rendimiento, minutos, resumen
+      vision, precision, rendimiento, minutos, resumen, createdAt
     ]);
   }
 

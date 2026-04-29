@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import BottomNav from '../components/BottomNav';
 import { useAppData } from '../../context/AppDataContext';
+import { normalizeSearchText } from '../../utils/matchMetrics';
 
 export default function DashboardScreen({ navigation }) {
   const { currentUser, logout, getMatchesForCurrentUser } = useAppData();
@@ -17,22 +18,51 @@ export default function DashboardScreen({ navigation }) {
   const [partidos, setPartidos] = useState([]);
 
   useEffect(() => {
+    let isActive = true;
+
     const loadMatches = async () => {
       const matches = await getMatchesForCurrentUser();
-      setPartidos(matches);
+      if (isActive) {
+        setPartidos(matches);
+      }
     };
+
+    const unsubscribe = navigation.addListener('focus', loadMatches);
     loadMatches();
-  }, [getMatchesForCurrentUser]);
+
+    return () => {
+      isActive = false;
+      unsubscribe();
+    };
+  }, [getMatchesForCurrentUser, navigation]);
 
   const filteredMatches = useMemo(() => {
-    const searchTerm = search.trim().toLowerCase();
+    const searchTerm = normalizeSearchText(search);
 
     if (!searchTerm) {
       return partidos;
     }
 
     return partidos.filter((partido) => {
-      const searchable = `${partido.nombrePartido} ${partido.fecha} ${partido.torneo}`.toLowerCase();
+      const stats = partido.stats || partido;
+      const indicators = partido.indicators || {};
+      const searchable = normalizeSearchText([
+        partido.nombrePartido,
+        partido.fecha,
+        partido.torneo,
+        partido.resumen,
+        stats.velocidadMaxima,
+        stats.distancia,
+        stats.sprints,
+        stats.goles,
+        stats.tiros,
+        stats.pases,
+        stats.minutos,
+        indicators.intensidadSprints,
+        indicators.participacionOfensiva,
+        indicators.eficaciaDefinicion,
+        indicators.ritmoJuego,
+      ].join(' '));
       return searchable.includes(searchTerm);
     });
   }, [partidos, search]);
@@ -59,7 +89,7 @@ export default function DashboardScreen({ navigation }) {
 
       <TextInput
         style={styles.searchBar}
-        placeholder="Torneo, fecha, equipo"
+        placeholder="Buscar por partido, fecha, torneo o métrica"
         placeholderTextColor="#666"
         value={search}
         onChangeText={setSearch}
@@ -86,7 +116,7 @@ export default function DashboardScreen({ navigation }) {
           <View style={styles.emptyCard}>
             <Text style={styles.emptyTitle}>No hay partidos para mostrar</Text>
             <Text style={styles.emptyText}>
-              Carga tu primer partido para generar métricas aleatorias.
+              Registra un partido para generar métricas e indicadores.
             </Text>
           </View>
         )}

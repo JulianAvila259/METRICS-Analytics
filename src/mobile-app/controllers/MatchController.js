@@ -1,24 +1,67 @@
 import MatchModel from '../models/MatchModel.js';
 import DatabaseService from '../services/DatabaseService.js';
+import {
+  MATCH_STAT_KEYS,
+  buildMatchResumen,
+  calculateMatchIndicators,
+  getMatchStats,
+  toFiniteNumber,
+} from '../utils/matchMetrics.js';
 
 class MatchController {
   constructor() {
     this.matchModel = MatchModel;
     this.inMemoryMatches = []; // Fallback storage
     this.useInMemory = false;
+    this.fallbackStorageKey = 'metrics_analytics_matches';
   }
 
   async init() {
     try {
       console.log('[MatchController.init] Starting initialization...');
-      await DatabaseService.init();
+      const db = await DatabaseService.init();
       await this.matchModel.init();
+
+      if (!db || !this.matchModel.db) {
+        console.log('[MatchController.init] Database unavailable, using in-memory storage');
+        this.useInMemory = true;
+        this.loadFallbackMatches();
+        return;
+      }
+
       console.log('[MatchController.init] Initialization successful');
       this.useInMemory = false;
     } catch (error) {
       console.error('[MatchController.init] Database initialization failed:', error);
       console.log('[MatchController.init] Falling back to in-memory storage');
       this.useInMemory = true;
+      this.loadFallbackMatches();
+    }
+  }
+
+  loadFallbackMatches() {
+    if (typeof window === 'undefined' || !window.localStorage) {
+      return;
+    }
+
+    try {
+      const storedMatches = JSON.parse(window.localStorage.getItem(this.fallbackStorageKey) || '[]');
+      this.inMemoryMatches = Array.isArray(storedMatches) ? storedMatches : [];
+    } catch (error) {
+      console.warn('[MatchController.loadFallbackMatches] Could not load fallback matches:', error.message);
+      this.inMemoryMatches = [];
+    }
+  }
+
+  persistFallbackMatches() {
+    if (typeof window === 'undefined' || !window.localStorage) {
+      return;
+    }
+
+    try {
+      window.localStorage.setItem(this.fallbackStorageKey, JSON.stringify(this.inMemoryMatches));
+    } catch (error) {
+      console.warn('[MatchController.persistFallbackMatches] Could not persist fallback matches:', error.message);
     }
   }
 
@@ -38,27 +81,29 @@ class MatchController {
   }
 
   buildResumen(stats) {
-    return `${stats.velocidadMaxima.toFixed(1)} km/h · ${stats.distancia.toFixed(1)} km · ${stats.sprints} sprints`;
+    return buildMatchResumen(stats);
+  }
+
+  buildManualStats(matchData) {
+    return MATCH_STAT_KEYS.reduce((stats, key) => {
+      stats[key] = toFiniteNumber(matchData[key]);
+      return stats;
+    }, {});
+  }
+
+  calculateIndicators(stats) {
+    return calculateMatchIndicators(stats);
   }
 
   normalizeMatch(match) {
     if (!match) return null;
-    if (match.stats) return match;
+    const stats = getMatchStats(match);
+    const indicators = match.indicators || this.calculateIndicators(stats);
 
     return {
       ...match,
-      stats: {
-        velocidadMaxima: match.velocidadMaxima,
-        distancia: match.distancia,
-        sprints: match.sprints,
-        goles: match.goles,
-        tiros: match.tiros,
-        pases: match.pases,
-        vision: match.vision,
-        precision: match.precision,
-        rendimiento: match.rendimiento,
-        minutos: match.minutos,
-      },
+      stats,
+      indicators,
     };
   }
 
@@ -73,18 +118,7 @@ class MatchController {
     let stats;
     if (hasManualStats) {
       // Use provided stats
-      stats = {
-        velocidadMaxima: Number(velocidadMaxima),
-        distancia: Number(distancia),
-        sprints: Number(sprints),
-        goles: Number(goles),
-        tiros: Number(tiros),
-        pases: Number(pases),
-        vision: Number(vision),
-        precision: Number(precision),
-        rendimiento: Number(rendimiento),
-        minutos: Number(minutos),
-      };
+      stats = this.buildManualStats(matchData);
       console.log('[MatchController.createMatch] Using manual stats:', stats);
     } else {
       // Generate random stats
@@ -93,9 +127,11 @@ class MatchController {
     }
 
     const resumen = this.buildResumen(stats);
+    const indicators = this.calculateIndicators(stats);
 
     // Create match ID
     const id = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const createdAt = new Date().toISOString();
 
     const match = {
       id,
@@ -105,12 +141,15 @@ class MatchController {
       torneo,
       ...stats,
       stats,
+      indicators,
       resumen,
+      createdAt,
     };
 
     if (this.useInMemory) {
       console.log('[MatchController.createMatch] Storing match in memory');
       this.inMemoryMatches.push(match);
+      this.persistFallbackMatches();
     } else {
       await this.matchModel.create(match);
     }
@@ -131,7 +170,9 @@ class MatchController {
   async getMatchesByUser(userId) {
     let matches;
     if (this.useInMemory) {
-      matches = this.inMemoryMatches.filter(m => m.userId === userId);
+      matches = this.inMemoryMatches
+        .filter(m => m.userId === userId)
+        .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
     } else {
       matches = await this.matchModel.findByUserId(userId);
     }
@@ -141,7 +182,7 @@ class MatchController {
   async getAllMatches() {
     let matches;
     if (this.useInMemory) {
-      matches = this.inMemoryMatches;
+      matches = [...this.inMemoryMatches].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
     } else {
       matches = await this.matchModel.getAll();
     }
@@ -153,12 +194,17 @@ class MatchController {
       const match = this.inMemoryMatches.find(m => m.id === id);
       if (match) {
         Object.assign(match, matchData);
-        return match;
+        const stats = this.buildManualStats(match);
+        match.stats = stats;
+        match.indicators = this.calculateIndicators(stats);
+        match.resumen = this.buildResumen(stats);
+        this.persistFallbackMatches();
+        return this.normalizeMatch(match);
       }
       return null;
     } else {
       await this.matchModel.update(id, matchData);
-      return await this.matchModel.findById(id);
+      return this.normalizeMatch(await this.matchModel.findById(id));
     }
   }
 
@@ -167,6 +213,7 @@ class MatchController {
       const index = this.inMemoryMatches.findIndex(m => m.id === id);
       if (index > -1) {
         this.inMemoryMatches.splice(index, 1);
+        this.persistFallbackMatches();
       }
     } else {
       await this.matchModel.delete(id);

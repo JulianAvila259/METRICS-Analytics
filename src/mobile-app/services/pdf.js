@@ -1,7 +1,12 @@
-import { Alert, Platform } from 'react-native';
+import { Platform } from 'react-native';
+import * as FileSystem from 'expo-file-system';
+import { calculateMatchIndicators, formatNumber, getMatchStats } from '../utils/matchMetrics';
 
 const escapePdfText = (text) =>
   String(text)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^\x20-\x7E]/g, '')
     .replace(/\\/g, '\\\\')
     .replace(/\(/g, '\\(')
     .replace(/\)/g, '\\)');
@@ -10,8 +15,8 @@ const buildPdfText = (title, lines) => {
   const commands = ['BT', '/F1 18 Tf', '1 0 0 1 50 800 Tm', `(${escapePdfText(title)}) Tj`];
 
   lines.forEach((line, index) => {
-    const y = 770 - index * 20;
-    commands.push('/F1 11 Tf', `1 0 0 1 50 ${y} Tm`, `(${escapePdfText(line)}) Tj`);
+    const y = 770 - index * 17;
+    commands.push('/F1 10 Tf', `1 0 0 1 50 ${y} Tm`, `(${escapePdfText(line)}) Tj`);
   });
 
   commands.push('ET');
@@ -59,62 +64,112 @@ const buildMinimalPdf = (title, lines) => {
   return pdf;
 };
 
-const formatFileSize = (size) => {
-  if (!size) {
+const safeFileName = (value) => {
+  const normalizedName = String(value || 'partido')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/gi, '_')
+    .replace(/^_+|_+$/g, '')
+    .toLowerCase();
+
+  return normalizedName || 'partido';
+};
+
+const formatDateTime = (value) => {
+  if (!value) {
     return 'No disponible';
   }
 
-  const sizeInMb = size / (1024 * 1024);
-  return `${sizeInMb.toFixed(1)} MB`;
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return String(value);
+  }
+
+  return date.toLocaleString();
 };
 
-export const downloadMatchPdf = async (match, currentUser) => {
-  const stats = match.stats || match;
-  const lines = [
+const formatValue = (value, suffix = '', decimals = 2) => {
+  const formatted = formatNumber(value, decimals);
+  return suffix ? `${formatted} ${suffix}` : formatted;
+};
+
+const buildMatchPdfLines = (match, currentUser = {}) => {
+  const user = currentUser || {};
+  const stats = getMatchStats(match);
+  const indicators = match.indicators || calculateMatchIndicators(stats);
+  const playerName = [user.nombre, user.apellido].filter(Boolean).join(' ') || 'Jugador';
+
+  return [
     'Resumen del jugador',
-    `Jugador: ${currentUser.nombre} ${currentUser.apellido}`,
-    `Usuario: ${currentUser.usuario}`,
-    `Correo: ${currentUser.correo}`,
-    `Edad: ${currentUser.edad}`,
+    `Jugador: ${playerName}`,
+    `Usuario: ${user.usuario ? `@${user.usuario}` : 'No disponible'}`,
+    `Correo: ${user.correo || 'No disponible'}`,
+    `Edad: ${user.edad || 'No disponible'}`,
+    `Posicion: ${user.posicion || 'No disponible'}`,
     ' ',
     'Datos del partido',
     `Partido: ${match.nombrePartido}`,
-    `Fecha: ${match.fecha}`,
+    `Fecha del partido: ${match.fecha}`,
     `Competencia: ${match.torneo}`,
-    `Fecha de registro: ${new Date(match.createdAt).toLocaleString()}`,
-    ' ',
-    'Metricas generadas',
-    `Velocidad maxima: ${stats.velocidadMaxima} km/h`,
-    `Distancia recorrida: ${stats.distancia} km`,
-    `Sprints: ${stats.sprints}`,
-    `Goles: ${stats.goles}`,
-    `Tiros: ${stats.tiros}`,
-    `Pases: ${stats.pases}`,
-    `Vision: ${stats.vision}`,
-    `Precision: ${stats.precision}`,
-    `Rendimiento: ${stats.rendimiento}`,
-    `Minutos jugados: ${stats.minutos}`,
-    ' ',
+    `Fecha de registro: ${formatDateTime(match.createdAt)}`,
     `Resumen corto: ${match.resumen}`,
+    ' ',
+    'Metricas registradas',
+    `Velocidad maxima: ${formatValue(stats.velocidadMaxima, 'km/h', 1)}`,
+    `Distancia recorrida: ${formatValue(stats.distancia, 'km', 2)}`,
+    `Sprints realizados: ${formatValue(stats.sprints, '', 0)}`,
+    `Goles anotados: ${formatValue(stats.goles, '', 0)}`,
+    `Tiros realizados: ${formatValue(stats.tiros, '', 0)}`,
+    `Pases realizados: ${formatValue(stats.pases, '', 0)}`,
+    `Vision del juego: ${formatValue(stats.vision, '%', 2)}`,
+    `Precision: ${formatValue(stats.precision, '%', 2)}`,
+    `Rendimiento general: ${formatValue(stats.rendimiento, '%', 2)}`,
+    `Minutos jugados: ${formatValue(stats.minutos, 'min', 0)}`,
+    ' ',
+    'Indicadores calculados',
+    `Intensidad de sprints: ${formatValue(indicators.intensidadSprints, 'sprints/10 min', 2)}`,
+    `Participacion ofensiva: ${formatValue(indicators.participacionOfensiva, 'pts', 2)}`,
+    `Eficacia de definicion: ${formatValue(indicators.eficaciaDefinicion, '%', 2)}`,
+    `Ritmo de juego: ${formatValue(indicators.ritmoJuego, 'km/min', 3)}`,
   ];
+};
 
+export const downloadMatchPdf = async (match, currentUser) => {
+  const fileName = `${safeFileName(match.nombrePartido)}.pdf`;
+  const lines = buildMatchPdfLines(match, currentUser);
   const pdfText = buildMinimalPdf(`Paquete de partido - ${match.nombrePartido}`, lines);
 
-  if (Platform.OS !== 'web') {
-    Alert.alert(
-      'PDF preparado',
-      'La descarga automática del PDF se configuró para entorno web. En móvil puedes extenderlo luego con guardado nativo.'
-    );
-    return;
+  if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    const blob = new Blob([pdfText], { type: 'application/pdf' });
+    const url = window.URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = fileName;
+    document.body.appendChild(anchor);
+    anchor.click();
+    document.body.removeChild(anchor);
+    window.URL.revokeObjectURL(url);
+
+    return {
+      uri: fileName,
+      message: 'La descarga del PDF inició en el navegador.',
+    };
   }
 
-  const blob = new Blob([pdfText], { type: 'application/pdf' });
-  const url = window.URL.createObjectURL(blob);
-  const anchor = document.createElement('a');
-  anchor.href = url;
-  anchor.download = `${match.nombrePartido.replace(/\s+/g, '_').toLowerCase()}.pdf`;
-  document.body.appendChild(anchor);
-  anchor.click();
-  document.body.removeChild(anchor);
-  window.URL.revokeObjectURL(url);
+  const directory = FileSystem.documentDirectory || FileSystem.cacheDirectory;
+
+  if (!directory) {
+    throw new Error('No hay un directorio disponible para guardar el PDF.');
+  }
+
+  const fileUri = `${directory}${fileName}`;
+  await FileSystem.writeAsStringAsync(fileUri, pdfText, {
+    encoding: FileSystem.EncodingType.UTF8,
+  });
+
+  return {
+    uri: fileUri,
+    message: `PDF guardado en: ${fileUri}`,
+  };
 };

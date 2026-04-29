@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useAppData } from '../../context/AppDataContext';
 import { showMessage } from '../../services/notify';
+import { MATCH_STAT_KEYS, toFiniteNumber } from '../../utils/matchMetrics';
 
 const initialForm = {
   nombrePartido: '',
@@ -29,9 +30,23 @@ const initialForm = {
   minutos: '',
 };
 
+const statLabels = {
+  velocidadMaxima: 'velocidad máxima',
+  distancia: 'distancia recorrida',
+  sprints: 'sprints realizados',
+  goles: 'goles anotados',
+  tiros: 'tiros realizados',
+  pases: 'pases realizados',
+  vision: 'visión del juego',
+  precision: 'precisión',
+  rendimiento: 'rendimiento general',
+  minutos: 'minutos jugados',
+};
+
 export default function UploadMatchScreen({ navigation }) {
   const { addMatchForCurrentUser } = useAppData();
   const [form, setForm] = useState(initialForm);
+  const [isSaving, setIsSaving] = useState(false);
 
   const updateField = (field, value) => {
     setForm((previous) => ({
@@ -41,6 +56,10 @@ export default function UploadMatchScreen({ navigation }) {
   };
 
   const handleSaveMatch = async () => {
+    if (isSaving) {
+      return;
+    }
+
     // Validar campos básicos
     const requiredFields = ['nombrePartido', 'fecha', 'torneo'];
     const missingBasic = requiredFields.filter(field => !String(form[field]).trim());
@@ -51,44 +70,48 @@ export default function UploadMatchScreen({ navigation }) {
     }
 
     // Validar estadísticas numéricas
-    const numericFields = ['velocidadMaxima', 'distancia', 'sprints', 'goles', 'tiros', 'pases', 'vision', 'precision', 'rendimiento', 'minutos'];
-    const missingStats = numericFields.filter(field => {
-      const value = form[field];
-      return !value || isNaN(Number(value)) || Number(value) < 0;
+    const missingStats = MATCH_STAT_KEYS.filter(field => {
+      const rawValue = String(form[field] ?? '').trim();
+      const numericValue = toFiniteNumber(rawValue, Number.NaN);
+
+      return rawValue === '' || !Number.isFinite(numericValue) || numericValue < 0 || (field === 'minutos' && numericValue <= 0);
     });
 
     if (missingStats.length > 0) {
-      Alert.alert('Estadísticas incompletas', `Debes ingresar valores numéricos válidos para: ${missingStats.join(', ')}`);
+      Alert.alert(
+        'Estadísticas incompletas',
+        `Debes ingresar valores numéricos válidos para: ${missingStats.map((field) => statLabels[field]).join(', ')}`
+      );
       return;
     }
 
     // Convertir strings a números
-    const matchData = {
-      ...form,
-      velocidadMaxima: Number(form.velocidadMaxima),
-      distancia: Number(form.distancia),
-      sprints: Number(form.sprints),
-      goles: Number(form.goles),
-      tiros: Number(form.tiros),
-      pases: Number(form.pases),
-      vision: Number(form.vision),
-      precision: Number(form.precision),
-      rendimiento: Number(form.rendimiento),
-      minutos: Number(form.minutos),
-    };
+    const matchData = MATCH_STAT_KEYS.reduce((payload, field) => {
+      payload[field] = toFiniteNumber(form[field]);
+      return payload;
+    }, {
+      nombrePartido: form.nombrePartido.trim(),
+      fecha: form.fecha.trim(),
+      torneo: form.torneo.trim(),
+    });
 
-    const result = await addMatchForCurrentUser(matchData);
+    setIsSaving(true);
+    try {
+      const result = await addMatchForCurrentUser(matchData);
 
-    if (!result.ok) {
-      Alert.alert('No fue posible guardar el partido', result.message);
-      return;
+      if (!result.ok) {
+        Alert.alert('No fue posible guardar el partido', result.message);
+        return;
+      }
+
+      showMessage(
+        'Partido guardado con éxito',
+        'El partido fue guardado correctamente con todos los datos registrados.',
+        () => navigation.replace('PartidoDetalle', { matchId: result.match.id })
+      );
+    } finally {
+      setIsSaving(false);
     }
-
-    showMessage(
-      'Partido creado con éxito',
-      'El partido fue guardado correctamente con las métricas que registraste.',
-      () => navigation.replace('PartidoDetalle', { matchId: result.match.id })
-    );
   };
 
   return (
@@ -254,8 +277,12 @@ export default function UploadMatchScreen({ navigation }) {
           </View>
         </View>
 
-        <TouchableOpacity style={styles.saveButton} onPress={handleSaveMatch}>
-          <Text style={styles.saveButtonText}>Guardar partido</Text>
+        <TouchableOpacity
+          style={[styles.saveButton, isSaving && styles.saveButtonDisabled]}
+          onPress={handleSaveMatch}
+          disabled={isSaving}
+        >
+          <Text style={styles.saveButtonText}>{isSaving ? 'Guardando...' : 'Guardar partido'}</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -303,6 +330,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     marginTop: 24,
+  },
+  saveButtonDisabled: {
+    opacity: 0.7,
   },
   sectionTitle: {
     color: '#fff',

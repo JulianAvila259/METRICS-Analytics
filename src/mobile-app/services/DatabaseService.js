@@ -83,6 +83,8 @@ class DatabaseService {
         FOREIGN KEY (userId) REFERENCES users (id)
       );
     `);
+
+    await this.ensureMatchColumns(db);
   }
 
   async ensureUserColumns(db) {
@@ -92,6 +94,32 @@ class DatabaseService {
       'ALTER TABLE users ADD COLUMN edad TEXT',
       'ALTER TABLE users ADD COLUMN fechaNacimiento TEXT',
       'ALTER TABLE users ADD COLUMN posicion TEXT',
+    ];
+
+    for (const statement of alterStatements) {
+      try {
+        await db.execAsync(statement);
+      } catch (error) {
+        // Column already exists or table not ready; ignore.
+      }
+    }
+  }
+
+  async ensureMatchColumns(db) {
+    const alterStatements = [
+      'ALTER TABLE matches ADD COLUMN torneo TEXT',
+      'ALTER TABLE matches ADD COLUMN velocidadMaxima REAL',
+      'ALTER TABLE matches ADD COLUMN distancia REAL',
+      'ALTER TABLE matches ADD COLUMN sprints INTEGER',
+      'ALTER TABLE matches ADD COLUMN goles INTEGER',
+      'ALTER TABLE matches ADD COLUMN tiros INTEGER',
+      'ALTER TABLE matches ADD COLUMN pases INTEGER',
+      'ALTER TABLE matches ADD COLUMN vision REAL',
+      'ALTER TABLE matches ADD COLUMN precision REAL',
+      'ALTER TABLE matches ADD COLUMN rendimiento REAL',
+      'ALTER TABLE matches ADD COLUMN minutos INTEGER',
+      'ALTER TABLE matches ADD COLUMN resumen TEXT',
+      'ALTER TABLE matches ADD COLUMN createdAt TEXT',
     ];
 
     for (const statement of alterStatements) {
