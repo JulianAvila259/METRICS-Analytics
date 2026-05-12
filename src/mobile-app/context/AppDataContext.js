@@ -1,6 +1,23 @@
 import React, { createContext, useCallback, useContext, useMemo, useState, useEffect } from 'react';
-import AuthController from '../controllers/AuthController.js';
-import MatchController from '../controllers/MatchController.js';
+import { auth, db } from '../config/firebase';
+import { 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged
+} from 'firebase/auth';
+import { 
+  collection, 
+  doc, 
+  setDoc, 
+  getDoc, 
+  getDocs, 
+  addDoc,
+  query, 
+  where,
+  deleteDoc,
+  updateDoc
+} from 'firebase/firestore';
 
 const AppDataContext = createContext(null);
 
@@ -8,121 +25,220 @@ export function AppDataProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Escuchar cambios en la autenticación de Firebase
   useEffect(() => {
-    const init = async () => {
-      console.log('[AppDataContext] Starting app initialization...');
-      try {
-        console.log('[AppDataContext] Initializing AuthController...');
-        await AuthController.init();
-        console.log('[AppDataContext] AuthController initialized successfully');
-        
-        console.log('[AppDataContext] Initializing MatchController...');
-        await MatchController.init();
-        console.log('[AppDataContext] MatchController initialized successfully');
-        
-        console.log('[AppDataContext] App initialization completed');
-      } catch (error) {
-        console.error('[AppDataContext] Error initializing app:', error);
-      } finally {
-        console.log('[AppDataContext] Setting isLoading to false');
-        setIsLoading(false);
+    console.log('[Firebase] Escuchando cambios en autenticación...');
+    
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      console.log('[Firebase] onAuthStateChanged:', firebaseUser?.email || 'No user');
+      
+      if (firebaseUser) {
+        // Obtener datos adicionales del usuario desde Firestore
+        try {
+          const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+          if (userDoc.exists()) {
+            setCurrentUser({
+              uid: firebaseUser.uid,
+              email: firebaseUser.email,
+              ...userDoc.data()
+            });
+          } else {
+            setCurrentUser({
+              uid: firebaseUser.uid,
+              email: firebaseUser.email,
+              nombre: firebaseUser.email?.split('@')[0] || 'Usuario'
+            });
+          }
+        } catch (error) {
+          console.error('[Firebase] Error obteniendo datos del usuario:', error);
+          setCurrentUser({
+            uid: firebaseUser.uid,
+            email: firebaseUser.email
+          });
+        }
+      } else {
+        setCurrentUser(null);
       }
-    };
-    init();
+      
+      setIsLoading(false);
+    });
+    
+    return () => unsubscribe();
   }, []);
 
-  const login = useCallback(async (login, password) => {
+  // Función de login
+  const login = useCallback(async (email, password) => {
     try {
-      console.log('[AppDataContext.login] Starting login process with login:', login);
-      const user = await AuthController.login(login, password);
-      console.log('[AppDataContext.login] Login successful, setting currentUser:', user.usuario);
-      setCurrentUser(user);
+      console.log('[Firebase] Intentando login con:', email);
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      console.log('[Firebase] Login exitoso:', userCredential.user.email);
+      
       return {
         ok: true,
-        user,
+        user: {
+          uid: userCredential.user.uid,
+          email: userCredential.user.email
+        }
       };
     } catch (error) {
-      console.error('[AppDataContext.login] Login error:', error.message);
+      console.error('[Firebase] Login error:', error.message);
+      let mensaje = 'Error al iniciar sesión';
+      
+      switch (error.code) {
+        case 'auth/invalid-email':
+          mensaje = 'Email inválido';
+          break;
+        case 'auth/user-disabled':
+          mensaje = 'Usuario deshabilitado';
+          break;
+        case 'auth/user-not-found':
+          mensaje = 'Usuario no encontrado';
+          break;
+        case 'auth/wrong-password':
+          mensaje = 'Contraseña incorrecta';
+          break;
+        default:
+          mensaje = error.message;
+      }
+      
       return {
         ok: false,
-        message: error.message,
+        message: mensaje
       };
     }
   }, []);
 
+  // Función de registro
   const register = useCallback(async (payload) => {
     try {
-      const user = await AuthController.register({
-        correo: payload.correo,
+      console.log('[Firebase] Registrando usuario:', payload.correo);
+      
+      // Crear usuario en Firebase Auth
+      const userCredential = await createUserWithEmailAndPassword(
+        auth, 
+        payload.correo, 
+        payload.password
+      );
+      
+      // Guardar datos adicionales en Firestore
+      const userData = {
+        uid: userCredential.user.uid,
+        email: payload.correo,
         usuario: payload.usuario,
-        password: payload.password,
-        nombre: payload.nombre,
-        apellido: payload.apellido,
-        edad: payload.edad,
-        fechaNacimiento: payload.edad,
+        nombre: payload.nombre || '',
+        apellido: payload.apellido || '',
+        edad: payload.edad || '',
         posicion: payload.posicion || '',
-      });
-      setCurrentUser(user);
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      
+      await setDoc(doc(db, 'users', userCredential.user.uid), userData);
+      
+      console.log('[Firebase] Registro exitoso:', payload.correo);
+      
       return {
         ok: true,
-        user,
+        user: userData
       };
     } catch (error) {
-      console.error('Register error:', error.message);
+      console.error('[Firebase] Register error:', error.message);
+      let mensaje = 'Error al registrar usuario';
+      
+      switch (error.code) {
+        case 'auth/email-already-in-use':
+          mensaje = 'El email ya está registrado';
+          break;
+        case 'auth/invalid-email':
+          mensaje = 'Email inválido';
+          break;
+        case 'auth/weak-password':
+          mensaje = 'La contraseña debe tener al menos 6 caracteres';
+          break;
+        default:
+          mensaje = error.message;
+      }
+      
       return {
         ok: false,
-        message: error.message,
+        message: mensaje
       };
     }
   }, []);
 
+  // Función de logout
   const logout = useCallback(async () => {
     try {
-      await AuthController.logout();
+      await signOut(auth);
+      console.log('[Firebase] Logout exitoso');
       setCurrentUser(null);
       return { ok: true };
     } catch (error) {
+      console.error('[Firebase] Logout error:', error.message);
       return { ok: false, message: error.message };
     }
   }, []);
 
+  // Crear partido
   const addMatchForCurrentUser = useCallback(async (matchPayload) => {
     if (!currentUser) {
       return {
         ok: false,
-        message: 'No hay un usuario autenticado.',
+        message: 'No hay un usuario autenticado.'
       };
     }
 
     try {
-      const match = await MatchController.createMatch(currentUser.id, matchPayload);
+      const matchData = {
+        ...matchPayload,
+        userId: currentUser.uid,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      
+      const matchRef = await addDoc(collection(db, 'matches'), matchData);
+      
       return {
         ok: true,
-        match,
+        match: { id: matchRef.id, ...matchData }
       };
     } catch (error) {
+      console.error('[Firebase] Error creando partido:', error);
       return {
         ok: false,
-        message: error.message,
+        message: error.message
       };
     }
   }, [currentUser]);
 
+  // Obtener partido por ID
   const getMatchById = useCallback(async (matchId) => {
     try {
-      return await MatchController.getMatchById(matchId);
+      const matchDoc = await getDoc(doc(db, 'matches', matchId));
+      if (matchDoc.exists()) {
+        return { id: matchDoc.id, ...matchDoc.data() };
+      }
+      return null;
     } catch (error) {
-      console.error('Error getting match:', error);
+      console.error('[Firebase] Error obteniendo partido:', error);
       return null;
     }
   }, []);
 
+  // Obtener partidos del usuario actual
   const getMatchesForCurrentUser = useCallback(async () => {
     if (!currentUser) return [];
+    
     try {
-      return await MatchController.getMatchesByUser(currentUser.id);
+      const q = query(collection(db, 'matches'), where('userId', '==', currentUser.uid));
+      const querySnapshot = await getDocs(q);
+      const matches = [];
+      querySnapshot.forEach((doc) => {
+        matches.push({ id: doc.id, ...doc.data() });
+      });
+      return matches;
     } catch (error) {
-      console.error('Error getting matches:', error);
+      console.error('[Firebase] Error obteniendo partidos:', error);
       return [];
     }
   }, [currentUser]);
@@ -153,10 +269,8 @@ export function AppDataProvider({ children }) {
 
 export function useAppData() {
   const context = useContext(AppDataContext);
-
   if (!context) {
     throw new Error('useAppData debe usarse dentro de AppDataProvider');
   }
-
   return context;
 }

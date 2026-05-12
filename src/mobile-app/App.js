@@ -10,12 +10,14 @@ import ResultadosScreen from './views/screens/ResultadosScreen';
 import UploadMatchScreen from './views/screens/UploadMatchScreen';
 import PartidoDetalleScreen from './views/screens/PartidoDetalleScreen';
 import { AppDataProvider, useAppData } from './context/AppDataContext';
+import { db } from './config/firebase';
+import { collection, addDoc } from 'firebase/firestore';
 
 const Stack = createStackNavigator();
 
 function AppContent() {
   const { isLoading } = useAppData();
-
+  
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
