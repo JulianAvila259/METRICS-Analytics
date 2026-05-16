@@ -1,6 +1,7 @@
 import { Platform } from 'react-native';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { calculateMatchIndicators, formatNumber, getMatchStats } from '../utils/matchMetrics';
+import * as Sharing from 'expo-sharing';
 
 const escapePdfText = (text) =>
   String(text)
@@ -157,19 +158,26 @@ export const downloadMatchPdf = async (match, currentUser) => {
     };
   }
 
-  const directory = FileSystem.documentDirectory || FileSystem.cacheDirectory;
+  const fileUri = `${FileSystem.cacheDirectory}${fileName}`;
 
-  if (!directory) {
-    throw new Error('No hay un directorio disponible para guardar el PDF.');
-  }
-
-  const fileUri = `${directory}${fileName}`;
   await FileSystem.writeAsStringAsync(fileUri, pdfText, {
-    encoding: FileSystem.EncodingType.UTF8,
+    encoding: 'utf8',
   });
+
+  const canShare = await Sharing.isAvailableAsync();
+if (canShare) {
+  try {
+    await Sharing.shareAsync(fileUri, {
+      mimeType: 'application/pdf',
+      dialogTitle: 'Compartir reporte del partido',
+    });
+  } catch (shareError) {
+    console.log('[PDF] Compartir cancelado');
+  }
+}
 
   return {
     uri: fileUri,
-    message: `PDF guardado en: ${fileUri}`,
+    message: 'PDF generado correctamente.',
   };
 };

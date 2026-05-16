@@ -21,7 +21,7 @@ export default function LoginScreen({ navigation, route }) {
     console.log('[LoginScreen.handleLogin] Starting login with email:', email);
     
     if (!email.trim() || !password.trim()) {
-      Alert.alert('Campos requeridos', 'Ingresa usuario y contraseña.');
+      Alert.alert('Campos requeridos', 'Ingresa correo y contraseña validos.');
       return;
     }
 

@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import BottomNav from '../components/BottomNav';
 import { useAppData } from '../../context/AppDataContext';
-import { formatNumber, normalizeSearchText } from '../../utils/matchMetrics';
+import { formatNumber, normalizeSearchText, calculateMatchIndicators } from '../../utils/matchMetrics';
 
 const summaryMetrics = [
   { key: 'velocidadMaxima', label: 'Velocidad', suffix: 'km/h', decimals: 1 },
@@ -137,8 +137,8 @@ export default function ResultadosScreen({ navigation }) {
         </Text>
 
         {filteredMatches.map((partido) => {
-          const stats = partido.stats || partido;
-          const indicators = partido.indicators || {};
+          const stats = partido.stats || partido;  // ← stats vienen directo del partido
+          const indicators = partido.indicators || calculateMatchIndicators(stats);
 
           return (
             <TouchableOpacity

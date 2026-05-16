@@ -69,10 +69,6 @@ export default function DashboardScreen({ navigation }) {
 
   const handleLogout = async () => {
     await logout();
-    navigation.reset({
-      index: 0,
-      routes: [{ name: 'Login' }],
-    });
   };
 
   return (
@@ -80,9 +76,6 @@ export default function DashboardScreen({ navigation }) {
       <View style={styles.header}>
         <Text style={styles.brand}>VORTEX</Text>
         <Text style={styles.subtitle}>Sports AI</Text>
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Text style={styles.logoutText}>Salir</Text>
-        </TouchableOpacity>
       </View>
 
       <Text style={styles.welcome}>Hola, {currentUser?.usuario}. Estos son tus partidos cargados.</Text>

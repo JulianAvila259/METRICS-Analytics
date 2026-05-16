@@ -17,7 +17,6 @@ const initialForm = {
   nombrePartido: '',
   fecha: '',
   torneo: '',
-  // Estadísticas manuales
   velocidadMaxima: '',
   distancia: '',
   sprints: '',
@@ -117,7 +116,7 @@ export default function UploadMatchScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.container}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={{ paddingTop: 20 }}>
           <Text style={styles.back}>← Volver</Text>
         </TouchableOpacity>
 

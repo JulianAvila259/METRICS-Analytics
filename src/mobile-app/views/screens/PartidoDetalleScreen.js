@@ -25,10 +25,34 @@ const statItems = [
 ];
 
 const indicatorItems = [
-  { label: 'Intensidad de sprints', key: 'intensidadSprints', suffix: 'sprints/10 min', decimals: 2 },
-  { label: 'Participación ofensiva', key: 'participacionOfensiva', suffix: 'pts', decimals: 2 },
-  { label: 'Eficacia de definición', key: 'eficaciaDefinicion', suffix: '%', decimals: 2 },
-  { label: 'Ritmo de juego', key: 'ritmoJuego', suffix: 'km/min', decimals: 3 },
+  {
+    label: 'Intensidad de sprints',
+    key: 'intensidadSprints',
+    suffix: 'sprints/10min',
+    decimals: 2,
+    description: 'Sprints por cada 10 minutos jugados'
+  },
+  {
+    label: 'Participación ofensiva',
+    key: 'participacionOfensiva',
+    suffix: 'pts',
+    decimals: 2,
+    description: 'Tiros + goles × 2'
+  },
+  {
+    label: 'Eficacia de definición',
+    key: 'eficaciaDefinicion',
+    suffix: '%',
+    decimals: 2,
+    description: 'Porcentaje de tiros convertidos en gol'
+  },
+  {
+    label: 'Ritmo de juego',
+    key: 'ritmoJuego',
+    suffix: 'km/min',
+    decimals: 3,
+    description: 'Distancia recorrida por minuto'
+  },
 ];
 
 const formatValue = (value, suffix = '', decimals = 2) => {
@@ -50,10 +74,15 @@ const formatDateTime = (value) => {
   return date.toLocaleString();
 };
 
-function DetailRow({ label, value }) {
+function DetailRow({ label, value, description }) {
   return (
     <View style={styles.row}>
-      <Text style={styles.rowLabel}>{label}</Text>
+      <View style={{ flex: 1 }}>
+        <Text style={styles.rowLabel}>{label}</Text>
+        {description && (
+          <Text style={{ color: '#5A6A7E', fontSize: 11, marginTop: 2 }}>{description}</Text>
+        )}
+      </View>
       <Text style={styles.rowValue}>{value || 'No disponible'}</Text>
     </View>
   );
@@ -111,13 +140,20 @@ export default function PartidoDetalleScreen({ navigation, route }) {
   }
 
   const handleDownload = async () => {
-    try {
-      const result = await downloadMatchPdf({ ...match, stats, indicators }, currentUser);
-      Alert.alert('PDF generado', result?.message || 'El PDF del partido fue generado correctamente.');
-    } catch (error) {
-      Alert.alert('Error al descargar', 'No fue posible generar el PDF del partido.');
+  try {
+    const result = await downloadMatchPdf({ ...match, stats, indicators }, currentUser);
+    if (result) {
+      Alert.alert('PDF generado', result.message);
     }
-  };
+  } catch (error) {
+    console.error('[PDF] Error mensaje:', error?.message);
+    console.error('[PDF] Error completo:', JSON.stringify(error));
+    if (error?.message?.includes('FileSystem') || error?.message?.includes('cancel')) {
+      return;
+    }
+    Alert.alert('Error', error.message || 'No fue posible generar el PDF.');
+  }
+};
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -147,15 +183,6 @@ export default function PartidoDetalleScreen({ navigation, route }) {
       </View>
 
       <View style={styles.sectionCard}>
-        <Text style={styles.sectionTitle}>Datos del jugador</Text>
-        <DetailRow label="Jugador" value={playerName} />
-        <DetailRow label="Usuario" value={currentUser?.usuario ? `@${currentUser.usuario}` : ''} />
-        <DetailRow label="Correo" value={currentUser?.correo} />
-        <DetailRow label="Edad" value={currentUser?.edad} />
-        <DetailRow label="Posición" value={currentUser?.posicion} />
-      </View>
-
-      <View style={styles.sectionCard}>
         <Text style={styles.sectionTitle}>Métricas registradas</Text>
         {statItems.map((item) => (
           <DetailRow
@@ -173,6 +200,7 @@ export default function PartidoDetalleScreen({ navigation, route }) {
             key={item.key}
             label={item.label}
             value={formatValue(indicators?.[item.key], item.suffix, item.decimals)}
+            description={item.description}
           />
         ))}
       </View>
