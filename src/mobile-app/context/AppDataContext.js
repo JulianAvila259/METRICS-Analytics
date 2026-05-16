@@ -25,7 +25,6 @@ export function AppDataProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Escuchar cambios en la autenticación de Firebase
   useEffect(() => {
     console.log('[Firebase] Escuchando cambios en autenticación...');
     
@@ -33,7 +32,6 @@ export function AppDataProvider({ children }) {
       console.log('[Firebase] onAuthStateChanged:', firebaseUser?.email || 'No user');
       
       if (firebaseUser) {
-        // Obtener datos adicionales del usuario desde Firestore
         try {
           const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
           if (userDoc.exists()) {
@@ -108,19 +106,16 @@ export function AppDataProvider({ children }) {
     }
   }, []);
 
-  // Función de registro
   const register = useCallback(async (payload) => {
     try {
       console.log('[Firebase] Registrando usuario:', payload.correo);
-      
-      // Crear usuario en Firebase Auth
+
       const userCredential = await createUserWithEmailAndPassword(
         auth, 
         payload.correo, 
         payload.password
       );
       
-      // Guardar datos adicionales en Firestore
       const userData = {
         uid: userCredential.user.uid,
         email: payload.correo,
@@ -166,7 +161,6 @@ export function AppDataProvider({ children }) {
     }
   }, []);
 
-  // Función de logout
   const logout = useCallback(async () => {
     try {
       await signOut(auth);
@@ -179,7 +173,6 @@ export function AppDataProvider({ children }) {
     }
   }, []);
 
-  // Crear partido
   const addMatchForCurrentUser = useCallback(async (matchPayload) => {
     if (!currentUser) {
       return {
@@ -211,7 +204,7 @@ export function AppDataProvider({ children }) {
     }
   }, [currentUser]);
 
-  // Obtener partido por ID
+
   const getMatchById = useCallback(async (matchId) => {
     try {
       const matchDoc = await getDoc(doc(db, 'matches', matchId));
@@ -225,7 +218,6 @@ export function AppDataProvider({ children }) {
     }
   }, []);
 
-  // Obtener partidos del usuario actual
   const getMatchesForCurrentUser = useCallback(async () => {
     if (!currentUser) return [];
     

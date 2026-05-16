@@ -85,7 +85,7 @@ export default function DashboardScreen({ navigation }) {
         </TouchableOpacity>
       </View>
 
-      <Text style={styles.welcome}>Hola, {currentUser?.nombre}. Estos son tus partidos cargados.</Text>
+      <Text style={styles.welcome}>Hola, {currentUser?.usuario}. Estos son tus partidos cargados.</Text>
 
       <TextInput
         style={styles.searchBar}

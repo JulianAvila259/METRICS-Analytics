@@ -19,7 +19,6 @@ const initialForm = {
   correo: '',
   usuario: '',
   password: '',
-  posicion: '',
 };
 
 export default function RegisterScreen({ navigation }) {
@@ -34,6 +33,7 @@ export default function RegisterScreen({ navigation }) {
   };
 
   const handleRegister = async () => {
+
     const requiredFields = Object.entries(form).filter(([, value]) => !String(value).trim());
 
     if (requiredFields.length > 0) {
@@ -50,10 +50,7 @@ export default function RegisterScreen({ navigation }) {
 
     showMessage(
       'Usuario creado con éxito',
-      'El usuario fue registrado correctamente. Ahora puedes iniciar sesión.',
-      () => {
-        navigation.navigate('Login', { prefilledUsername: result.user.usuario });
-      }
+      'El usuario fue registrado exitosamente.',
     );
   };
 

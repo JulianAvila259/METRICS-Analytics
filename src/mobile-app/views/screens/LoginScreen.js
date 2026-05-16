@@ -14,19 +14,19 @@ import { useAppData } from '../../context/AppDataContext';
 
 export default function LoginScreen({ navigation, route }) {
   const { login } = useAppData();
-  const [usuario, setUsuario] = useState(route?.params?.prefilledUsername || 'juang10');
-  const [password, setPassword] = useState('123456');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
   const handleLogin = async () => {
-    console.log('[LoginScreen.handleLogin] Starting login with usuario:', usuario);
+    console.log('[LoginScreen.handleLogin] Starting login with email:', email);
     
-    if (!usuario.trim() || !password.trim()) {
+    if (!email.trim() || !password.trim()) {
       Alert.alert('Campos requeridos', 'Ingresa usuario y contraseña.');
       return;
     }
 
     console.log('[LoginScreen.handleLogin] Calling context.login()...');
-    const result = await login(usuario, password);
+    const result = await login(email, password);
     console.log('[LoginScreen.handleLogin] Login result:', result);
 
     if (!result.ok) {
@@ -35,10 +35,7 @@ export default function LoginScreen({ navigation, route }) {
     }
 
     console.log('[LoginScreen.handleLogin] Login successful, navigating to Dashboard');
-    navigation.reset({
-      index: 0,
-      routes: [{ name: 'Dashboard' }],
-    });
+    
   };
 
   return (
@@ -48,7 +45,7 @@ export default function LoginScreen({ navigation, route }) {
         <Text style={styles.subtitle}>Sports AI</Text>
         <Text style={styles.heading}>Tu rendimiento profesional, hoy.</Text>
         <Text style={styles.description}>
-          Inicia sesión con tu usuario y contraseña o crea una cuenta nueva para cargar tus partidos.
+          Inicia sesión con tu correo y contraseña o crea una cuenta nueva para cargar tus partidos.
         </Text>
 
         <Image
@@ -59,12 +56,13 @@ export default function LoginScreen({ navigation, route }) {
 
         <View style={styles.form}>
           <TextInput
-            placeholder="Usuario"
+            placeholder="Correo electrónico"
+            value={email}
+            onChangeText={setEmail}
+            autoCapitalize="none"
+            keyboardType="email-address"
             placeholderTextColor="#888"
             style={styles.input}
-            value={usuario}
-            onChangeText={setUsuario}
-            autoCapitalize="none"
             returnKeyType="next"
           />
 
@@ -88,11 +86,6 @@ export default function LoginScreen({ navigation, route }) {
           </TouchableOpacity>
         </View>
 
-        <View style={styles.demoBox}>
-          <Text style={styles.demoTitle}>Usuario de prueba</Text>
-          <Text style={styles.demoText}>usuario: juang10</Text>
-          <Text style={styles.demoText}>contraseña: 123456</Text>
-        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -172,23 +165,5 @@ const styles = StyleSheet.create({
   secondaryText: {
     color: '#00D1FF',
     fontWeight: '600',
-  },
-  demoBox: {
-    width: '100%',
-    marginTop: 24,
-    borderRadius: 16,
-    backgroundColor: '#111827',
-    padding: 18,
-    borderWidth: 1,
-    borderColor: '#1B2532',
-  },
-  demoTitle: {
-    color: '#fff',
-    fontWeight: '700',
-    marginBottom: 8,
-  },
-  demoText: {
-    color: '#9DB2C8',
-    marginBottom: 4,
-  },
+  }
 });

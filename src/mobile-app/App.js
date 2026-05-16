@@ -10,13 +10,12 @@ import ResultadosScreen from './views/screens/ResultadosScreen';
 import UploadMatchScreen from './views/screens/UploadMatchScreen';
 import PartidoDetalleScreen from './views/screens/PartidoDetalleScreen';
 import { AppDataProvider, useAppData } from './context/AppDataContext';
-import { db } from './config/firebase';
-import { collection, addDoc } from 'firebase/firestore';
+
 
 const Stack = createStackNavigator();
 
 function AppContent() {
-  const { isLoading } = useAppData();
+  const { isLoading, isAuthenticated } = useAppData();
   
   if (isLoading) {
     return (
@@ -29,19 +28,21 @@ function AppContent() {
 
   return (
     <NavigationContainer>
-      <Stack.Navigator
-        screenOptions={{
-          headerShown: false,
-        }}
-        initialRouteName="Login"
-      >
-        <Stack.Screen name="Login" component={LoginScreen} />
-        <Stack.Screen name="Register" component={RegisterScreen} />
-        <Stack.Screen name="Dashboard" component={DashboardScreen} />
-        <Stack.Screen name="Resultados" component={ResultadosScreen} />
-        <Stack.Screen name="Perfil" component={PerfilScreen} />
-        <Stack.Screen name="UploadMatch" component={UploadMatchScreen} />
-        <Stack.Screen name="PartidoDetalle" component={PartidoDetalleScreen} />
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        {isAuthenticated ? (
+          <>
+            <Stack.Screen name="Dashboard" component={DashboardScreen} />
+            <Stack.Screen name="Resultados" component={ResultadosScreen} />
+            <Stack.Screen name="Perfil" component={PerfilScreen} />
+            <Stack.Screen name="UploadMatch" component={UploadMatchScreen} />
+            <Stack.Screen name="PartidoDetalle" component={PartidoDetalleScreen} />
+          </>
+        ) : (
+          <>
+            <Stack.Screen name="Login" component={LoginScreen} />
+            <Stack.Screen name="Register" component={RegisterScreen} />
+          </>
+        )}
       </Stack.Navigator>
     </NavigationContainer>
   );
